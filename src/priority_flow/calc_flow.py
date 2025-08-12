@@ -226,13 +226,10 @@ def calc_flow(
         
         # Write the outputs
         outflow_file = os.path.join(file_path, f"{run_name}.out.outflow.{fn:05d}.pfb")
-        write_pfb(outflow, outflow_file, dx, dy, 1)
+        write_pfb(outflow_file, outflow, dx, dy, dz=1.0, dist=False)
         
         qeast_file = os.path.join(file_path, f"{run_name}.out.q_east.{fn:05d}.pfb")
-        write_pfb(qeast, qeast_file, dx, dy, 1)
+        write_pfb(qeast_file, qeast, dx, dy, dz=1.0, dist=False)
         
         qnorth_file = os.path.join(file_path, f"{run_name}.out.q_north.{fn:05d}.pfb")
-        write_pfb(qnorth, qnorth_file, dx, dy, 1)
-
-
- 
+        write_pfb(qnorth_file, qnorth, dx, dy, dz=1.0, dist=False)
