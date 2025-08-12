@@ -20,7 +20,7 @@ def calc_stream_order(
     Parameters
     ----------
     basin_id : np.ndarray
-        A column list of basin IDs (can be obtained from the CalcSubbasins function 
+        An array of basin IDs (can be obtained from the CalcSubbasins function 
         Summary output column 1 "Basin_ID")
     ds_id : np.ndarray
         Downstream basin IDs, the downstream ID of each basin, should be corresponding 
@@ -32,7 +32,7 @@ def calc_stream_order(
     
     Returns
     -------
-    Dict[str, Union[np.ndarray, np.ndarray]]
+    Dict[str, np.ndarray]
         A dictionary containing:
         - 'summary': A summary table with a row for every basin with three columns 
           "Basin_ID", "Downstream_ID", "StreamOrder_number"
@@ -70,7 +70,6 @@ def calc_stream_order(
             
             if dstemp == 0:  # Stop when the basin drains outside the domain
                 active = False
-                continue
             
             # Find all basins draining to this downstream basin
             ulist = np.where(ds_id == dstemp)[0]
