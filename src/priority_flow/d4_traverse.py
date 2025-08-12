@@ -110,7 +110,7 @@ def d4_traverse_b(
     
     split = 0
     q1max = 0
-    nqueue = len(queue) // 3
+    nqueue = len(queue)
     nstep = 0
     queue_temp = None
     
