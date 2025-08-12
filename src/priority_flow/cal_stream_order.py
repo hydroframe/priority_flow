@@ -96,10 +96,11 @@ def calc_stream_order(
     
     # Create summary table
     summary = np.column_stack([basin_id, ds_id, order_no])
-    # NOTE: this should be a dataframe.
+    # TODO NOTE: this should be a dataframe. Check other places where it is called.
     # Prepare output
     if segments is None:
         output_dict = {"summary": summary}
+        # TODO NOTE: or perhaps the arrays should go to the dict with keys?
     else:
         segments2 = segments.copy()
         for i in range(len(basin_id)):
