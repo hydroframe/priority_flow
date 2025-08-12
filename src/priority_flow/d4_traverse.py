@@ -129,8 +129,7 @@ def d4_traverse_b(
         if nqueue2 == 1:
             queue2 = queue2.reshape(1, 3)
     else:
-        if printstep:
-            print(f'Initial queue: {nqueue} Not splitting')
+        print(f'Initial queue: {nqueue} Not splitting')
         queue1 = queue.copy()
         queue2 = None
         nqueue2 = 0
@@ -192,14 +191,14 @@ def d4_traverse_b(
         ##############
         # Remove from the queue and move on
         
-        nqueue = len(queue1) // 3
-        nqueue_temp = nqueue2 + (len(queue_temp) // 3 if queue_temp is not None else 0)
+        nqueue = len(queue1)
+        nqueue_temp = nqueue2 + (len(queue_temp) if queue_temp is not None else 0)
         
         # If you have 2 or more items in Q1 then you will have 1 left after
         # deleting the current cell so continue with Q1
         if nqueue > 1:
             queue1 = np.delete(queue1, pick, axis=0)
-            nqueue = len(queue1) // 3
+            nqueue = len(queue1)
             q1max = max(nqueue, q1max)
         # If you have only 1 item left in Q1 then it will be empty after deleting the
         # current cell so see if you are done or if you need to grab another chunk from Q2
@@ -218,8 +217,8 @@ def d4_traverse_b(
                 queue1 = qsort[:nchunk]
                 queue2 = qsort[nchunk:]
                 th = queue2[0, 2]
-                nqueue = len(queue1) // 3
-                nqueue2 = len(queue2) // 3
+                nqueue = len(queue1)
+                nqueue2 = len(queue2)
                 q1max = 0
                 t0 = time.time()
                 
