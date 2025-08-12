@@ -24,7 +24,7 @@ def fix_border_dir(
     Parameters
     ----------
     direction : np.ndarray
-        Flow direction matrix [nx, ny]
+        Flow direction matrix [nx, ny] - will be modified in place
     dem : np.ndarray
         Digital Elevation Model matrix [nx, ny]
     d4 : tuple, optional
@@ -34,13 +34,16 @@ def fix_border_dir(
     Returns
     -------
     np.ndarray
-        Updated flow direction matrix with corrected border cell directions
+        The modified direction array
     
     Notes
     -----
     This is a Python port of the R function FixBorderDir from PriorityFlow.
     The function analyzes slopes at domain boundaries to determine whether
     border cells should drain inward or outward.
+    
+    WARNING: This function modifies the input direction array in place
+    for backwards compatibility with the R version.
     
     Direction mapping:
     - d4[0] = 1: Down
@@ -53,34 +56,31 @@ def fix_border_dir(
     ny = direction.shape[1]  # Number of columns
     nx = direction.shape[0]  # Number of rows
     
-    # Make a copy to avoid modifying the original
-    direction_fixed = direction.copy()
-    
     # Check top border (y = ny-1 in 0-indexed Python)
     # If slope between ny-1 and ny-2 is positive, flow should point in (down)
     sy_top = dem[:, ny-1] - dem[:, ny-2]
     flip_top = np.where(sy_top > 0)[0]
-    direction_fixed[flip_top, ny-1] = d4[0]  # Point down (into domain)
+    direction[flip_top, ny-1] = d4[0]  # Point down (into domain)
     
     # Check bottom border (y = 0 in 0-indexed Python)
     # If slope between 1 and 0 is negative, flow should point in (up)
     sy_bot = dem[:, 1] - dem[:, 0]
     flip_bot = np.where(sy_bot < 0)[0]
-    direction_fixed[flip_bot, 0] = d4[2]  # Point up (into domain)
+    direction[flip_bot, 0] = d4[2]  # Point up (into domain)
     
     # Check right border (x = nx-1 in 0-indexed Python)
     # If slope between nx-1 and nx-2 is positive, flow should point in (left)
     sx_right = dem[nx-1, :] - dem[nx-2, :]
     flip_right = np.where(sx_right > 0)[0]
-    direction_fixed[nx-1, flip_right] = d4[1]  # Point left (into domain)
+    direction[nx-1, flip_right] = d4[1]  # Point left (into domain)
     
     # Check left border (x = 0 in 0-indexed Python)
     # If slope between 1 and 0 is negative, flow should point in (right)
     sx_left = dem[1, :] - dem[0, :]
     flip_left = np.where(sx_left < 0)[0]
-    direction_fixed[0, flip_left] = d4[3]  # Point right (into domain)
+    direction[0, flip_left] = d4[3]  # Point right (into domain)
     
-    return direction_fixed
+    return direction
 
 
  
