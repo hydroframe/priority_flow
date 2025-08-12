@@ -35,7 +35,7 @@ def calc_flow(
     Parameters
     ----------
     file_path : str
-        Path where pressure and slope files are located, also where flow files will be written
+        Directory path where pressure and slope files are located, also where flow files will be written
     run_name : str
         ParFlow run name used to read pressure files (standard naming: runname.out.press.00000.pfb)
     file_nums : List[int]
@@ -58,7 +58,7 @@ def calc_flow(
         Grid size in y direction [l]. Defaults to 1.0.
     mask : np.ndarray, optional
         Mask with ones for cells to be processed and zeros for everything else.
-        Defaults to processing everything. Should be [nx, ny] matrix where [0,0] is lower left corner.
+        Defaults to mask of all 1's. Should be [nx, ny] matrix where [0,0] is lower left corner.
     
     Notes
     -----
@@ -104,7 +104,7 @@ def calc_flow(
         # Read in the pressure file and get grid dimensions
         press_file = os.path.join(file_path, f"{run_name}.out.press.{fn:05d}.pfb")
         press = read_pfb(press_file, verbose=False)
-        nz = press.shape[2] if press.ndim == 3 else 1
+        nz = press.shape[2]
         
         # Test that pressure files and slope files are the same size
         nxtest = press.shape[0]
@@ -113,10 +113,7 @@ def calc_flow(
             raise ValueError("ERROR: X Y dimensions of slope and pressure files do not match")
         
         # Get positive pressures in the top layer for overland flow
-        if press.ndim == 3:
-            ptop = press[:, :, nz - 1]
-        else:
-            ptop = press
+        ptop = press[:, :, nz - 1]
         ptop[ptop < 0] = 0
         
         ################################################
