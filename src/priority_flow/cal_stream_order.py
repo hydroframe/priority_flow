@@ -96,7 +96,7 @@ def calc_stream_order(
     
     # Create summary table
     summary = np.column_stack([basin_id, ds_id, order_no])
-    
+    # NOTE: this should be a dataframe.
     # Prepare output
     if segments is None:
         output_dict = {"summary": summary}
