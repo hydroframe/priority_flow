@@ -121,7 +121,7 @@ def d4_traverse_b(
         queue1 = qsort[:nchunk]
         queue2 = qsort[nchunk:]
         th = queue2[0, 2]
-        nqueue2 = len(queue2) // 3
+        nqueue2 = len(queue2)
         nqueue = len(queue1)
         if printstep:
             print(f'Initial queue: {len(queue) // 3} splitting. Q1={nqueue}, Q2={nqueue2}')
