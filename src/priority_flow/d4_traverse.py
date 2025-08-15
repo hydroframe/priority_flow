@@ -232,7 +232,7 @@ def d4_traverse_b(
                 queue_temp = None
                 queue2 = None
                 th = np.max(dem[mask == 1]) * 1.1
-                nqueue = len(queue1) // 3
+                nqueue = len(queue1)
                 q1max = 0
                 nqueue2 = 0
             else:
