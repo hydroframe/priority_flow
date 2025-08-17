@@ -15,7 +15,7 @@ def path_extract(
     mask: Optional[np.ndarray] = None,
     startpoint: Union[List[int], Tuple[int, int], np.ndarray] = None,
     d4: Tuple[int, int, int, int] = (1, 2, 3, 4)
-) -> Dict[str, Union[List, np.ndarray]]:
+) -> Dict[str, np.ndarray]:
     """
     Walk downstream from a point and extract values from a matrix.
     
@@ -37,11 +37,11 @@ def path_extract(
     
     Returns
     -------
-    Dict[str, Union[List, np.ndarray]]
+    Dict[str, np.ndarray]
         A dictionary containing:
-        - 'data': List of values extracted along the downstream path
+        - 'data': Numpy array of values extracted along the downstream path
         - 'path_mask': Matrix mapping the path with step numbers
-        - 'path_list': List of cells on the path in order
+        - 'path_list': Numpy array of cells on the path in order
     
     Notes
     -----
@@ -110,15 +110,8 @@ def path_extract(
         
         # Look downstream
         dirtemp = int(dir2[indx, indy])
-        
-        # Handle invalid direction values
-        if dirtemp < 1 or dirtemp > 4:
-            active = False
-            break
-        
-        # Calculate downstream indices
-        downindx = indx + kd[dirtemp - 1, 0]  # Adjust for 0-indexing
-        downindy = indy + kd[dirtemp - 1, 1]  # Adjust for 0-indexing
+        downindx = indx + kd[dirtemp - 1, 0] 
+        downindy = indy + kd[dirtemp - 1, 1]
         
         # Check if we have made it out of the domain
         if (downindx < 0 or downindx >= nx or downindy < 0 or downindy >= ny):
@@ -133,11 +126,12 @@ def path_extract(
         indy = downindy
         step += 1
     
-    # Convert path to numpy array for consistency
+    # Convert output and path to numpy arrays for consistency
+    output_array = np.array(output) if output else np.empty(0)
     path_array = np.array(path) if path else np.empty((0, 2))
     
     output_list = {
-        "data": output,
+        "data": output_array,
         "path_mask": path_mask,
         "path_list": path_array
     }
