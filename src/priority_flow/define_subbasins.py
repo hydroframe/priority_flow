@@ -296,5 +296,5 @@ def calc_subbasins(
         "RiverMask": rivers,
         "summary": summary
     }
-    
+    # TODO: summary should be a pandas dataframe
     return output_list 
