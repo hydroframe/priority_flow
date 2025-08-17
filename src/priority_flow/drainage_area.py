@@ -144,15 +144,12 @@ def drainage_area(
             draintemp[xtemp, ytemp] = -99
         
         # Make a new queue with the cells with zero upstream drains left
-        if blist.size > 0:
-            ilist = np.where(draintemp[blist[:, 0]] == 0)[0]
-            if ilist.size > 0:
-                queue = blist[ilist, 1:3]
-                blist = np.delete(blist, ilist, axis=0)
-            else:
-                queue = np.empty((0, 2))
+        ilist = np.where(draintemp[blist[:, 0]] == 0)[0]
+        queue = blist[ilist, 1:3]
+        if ilist.size != blist.size // 3:
+            blist = np.delete(blist, ilist, axis=0)
         else:
-            queue = np.empty((0, 2))
+            blist = np.empty((0, 3))
             if printflag:
                 print("blist empty")
         
