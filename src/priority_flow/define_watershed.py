@@ -10,20 +10,19 @@ from typing import Dict, List, Optional, Tuple, Union
 
 
 def delin_watershed(
-    outlets: Union[List[float], np.ndarray],
+    outlets: np.ndarray,
     direction: np.ndarray,
     d4: Tuple[int, int, int, int] = (1, 2, 3, 4),
     printflag: bool = False
-) -> Dict[str, Union[np.ndarray, List[float]]]:
+) -> Dict[str, np.ndarray]:
     """
     Function to define the watershed for a point or set of outlet points based on the flow direction file.
     
     Parameters
     ----------
-    outlets : Union[List[float], np.ndarray]
+    outlets : np.ndarray
         x,y coordinates of the outlet points or points to mask upstream areas for.
-        If there is just one point, this can be input as [x, y].
-        If there are multiple points, this should be a 2D array with a separate row for each point.
+        This should be a 2D array with a separate row for each point.
     direction : np.ndarray
         Flow direction matrix
     d4 : Tuple[int, int, int, int], optional
@@ -34,11 +33,11 @@ def delin_watershed(
     
     Returns
     -------
-    Dict[str, Union[np.ndarray, List[float]]]
+    Dict[str, np.ndarray]
         A dictionary containing:
         - 'watershed': Binary mask of the watershed area (1 for watershed cells, 0 otherwise)
-        - 'xrange': Range of x coordinates covered by the watershed [min_x, max_x]
-        - 'yrange': Range of y coordinates covered by the watershed [min_y, max_y]
+        - 'xrange': Range of x coordinates covered by the watershed as numpy array [min_x, max_x]
+        - 'yrange': Range of y coordinates covered by the watershed as numpy array [min_y, max_y]
     
     Notes
     -----
@@ -75,16 +74,15 @@ def delin_watershed(
     right[direction == d4[3]] = 1
     
     # Initialize the queue with the outlet points
-    if len(outlets) == 2:
-        # If there is only one point pair, format it into a matrix
-        queue = np.array([outlets]).reshape(1, 2)
-    else:
-        # If multiple points, ensure it's a 2D array
-        if isinstance(outlets, list):
-            outlets = np.array(outlets)
-        if outlets.ndim == 1:
-            outlets = outlets.reshape(1, -1)
+    # Ensure outlets is a 2D numpy array
+    if outlets.ndim == 1:
+        # Single point: reshape to 2D array with one row
+        queue = outlets.reshape(1, -1)
+    elif outlets.ndim == 2:
+        # Multiple points: use as is
         queue = outlets.copy()
+    else:
+        raise ValueError("outlets must be a 1D or 2D numpy array")
     
     nqueue = len(queue)
     count0 = 0
@@ -136,12 +134,12 @@ def delin_watershed(
     
     # Calculate the range of coordinates covered by the watershed
     if len(masklist[0]) > 0:
-        xrange = [np.min(masklist[0]), np.max(masklist[0])]
-        yrange = [np.min(masklist[1]), np.max(masklist[1])]
+        xrange = np.array([np.min(masklist[0]), np.max(masklist[0])])
+        yrange = np.array([np.min(masklist[1]), np.max(masklist[1])])
     else:
-        # If no watershed was found, return empty ranges
-        xrange = [0, 0]
-        yrange = [0, 0]
+        # If no watershed was found, return empty arrays
+        xrange = np.array([])
+        yrange = np.array([])
     
     output_list = {
         "watershed": marked,
