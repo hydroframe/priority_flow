@@ -62,6 +62,7 @@ def peak_dist(
         mask = np.ones((nx, ny))  # Default to processing everything
     
     # Setup the border
+    # TODO: we can call get_border.py here to avoid re-implementing the same logic
     border = np.ones((nx, ny))
     border[1:(nx-1), 1:(ny-1)] = (
         mask[0:(nx-2), 1:(ny-1)] +
