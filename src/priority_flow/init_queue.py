@@ -92,6 +92,7 @@ def init_queue(
         domainmask = np.ones((nx, ny))
     
     # Setup the border
+    # TODO: we can call get_border.py here to avoid re-implementing the same logic
     if border is None:
         print("No border provided, setting border using domain mask")
         border = np.ones((nx, ny))
