@@ -120,30 +120,27 @@ def riv_slope(
                         adj_mask[i, j] = 0.5
                     
                     # If Remove.sec is TRUE set any secondary outflow slopes to 0
+                    # The code below substitutes the kd values directly. 
+                    # The R code is more explicit.
                     if remove_sec:
                         if np.max(sec_out) > 0:
                             # Down direction (secondary outflow)
                             if sec_out[0] > 0:
-                                # Note: kd[0] is [0, -1] but we need to adjust the cell that receives this outflow
-                                # The outflow is from current cell to cell below, so we adjust the current cell's outflow
                                 slopey_new[i, j-1] = 0
                                 adj_mask[i, j] = adj_mask[i, j] + 1
                             
                             # Left direction (secondary outflow)
                             if sec_out[1] > 0:
-                                # The outflow is from current cell to cell to the left
                                 slopex_new[i-1, j] = 0
                                 adj_mask[i, j] = adj_mask[i, j] + 1
                             
                             # Up direction (secondary outflow)
                             if sec_out[2] > 0:
-                                # The outflow is from current cell to cell above
                                 slopey_new[i, j] = 0
                                 adj_mask[i, j] = adj_mask[i, j] + 1
                             
                             # Right direction (secondary outflow)
                             if sec_out[3] > 0:
-                                # The outflow is from current cell to cell to the right
                                 slopex_new[i, j] = 0
                                 adj_mask[i, j] = adj_mask[i, j] + 1
     

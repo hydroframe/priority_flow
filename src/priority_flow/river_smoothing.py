@@ -112,6 +112,7 @@ def river_smooth(
     # Setup a smoothing summary
     riversmooth_summary = np.zeros((nriver, 9))
     # Column names: SegmentID, Start.X, Start.Y, End.X, End.Y, Length, Top.Elevation, Bottom.Elevation, delta
+    # TODO: This should be a dataframe!
     riversmooth_summary[:, :5] = river_summary[:, :5]
     
     # Make a mask of the hillslope cells

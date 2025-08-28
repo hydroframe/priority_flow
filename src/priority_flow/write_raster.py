@@ -157,6 +157,7 @@ def write_raster(
     ]
     
     # Handle NaN/None values in data
+    # NOTE: The R code does not handle NaN/None values in the data, despite the documentation.
     data_export = data.copy()
     if np.any(np.isnan(data_export)):
         data_export = np.where(np.isnan(data_export), naval, data_export)

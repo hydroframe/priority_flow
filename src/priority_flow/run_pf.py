@@ -184,6 +184,7 @@ def run_pf(
         # Create mask of marked rivers + boundaries + lakes + sinks
         # Note: In the R code, LborderT and SborderT are used but not defined in this function
         # For now, we'll use the existing border and marked cells
+        # TODO: fix this
         riv_border = border + trav1['marked']
         riv_border[riv_border > 1] = 1
         
@@ -207,7 +208,7 @@ def run_pf(
                 step=trav1['step'],
                 direction=trav1['direction'],
                 printstep=False,
-                epsilon=0.0
+                epsilon=0.0 #TODO: ep in the R code is undefined
             )
             
             # Update trav1 with the new results
