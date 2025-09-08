@@ -21,14 +21,6 @@ from .slopes import (
     river_smoothing,
 )
 
-# Import utility functions
-from .utils import (
-    get_border,
-    fix_drainage,
-    fix_flat,
-    calc_flow,
-)
-
 # Import I/O functions
 from .io import (
     write_raster,
@@ -52,10 +44,6 @@ __all__ = [
     "slope_calc_upwind",
     "river_slope",
     "river_smoothing",
-    "get_border",
-    "fix_drainage",
-    "fix_flat",
-    "calc_flow",
     "write_raster",
     "read_raster",
     "load_dem",
