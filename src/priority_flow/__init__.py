@@ -21,12 +21,6 @@ from .slopes import (
     river_smoothing,
 )
 
-# Import I/O functions
-from .io import (
-    write_raster,
-    read_raster,
-)
-
 # Import data loading functions
 from .data_loader import (
     load_dem,
@@ -44,8 +38,6 @@ __all__ = [
     "slope_calc_upwind",
     "river_slope",
     "river_smoothing",
-    "write_raster",
-    "read_raster",
     "load_dem",
     "load_watershed_mask", 
     "load_river_mask",
