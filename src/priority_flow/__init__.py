@@ -35,6 +35,15 @@ from .io import (
     read_raster,
 )
 
+# Import data loading functions
+from .data_loader import (
+    load_dem,
+    load_watershed_mask,
+    load_river_mask,
+    load_all_test_data,
+    get_data_info,
+)
+
 # Make key functions available at package level
 __all__ = [
     "init_queue",
@@ -49,4 +58,9 @@ __all__ = [
     "calc_flow",
     "write_raster",
     "read_raster",
+    "load_dem",
+    "load_watershed_mask", 
+    "load_river_mask",
+    "load_all_test_data",
+    "get_data_info",
 ] 
