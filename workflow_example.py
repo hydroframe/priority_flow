@@ -94,36 +94,39 @@ init = init_queue(DEM)
 # Process the DEM
 trav_hs = d4_traverse_b(
     DEM,
-    init["queue"],
-    init["marked"],
-    basins=init["basins"],
+    init["queue"].copy(),
+    init["marked"].copy(),
+    basins=init["basins"].copy(),
     epsilon=0,
     n_chunk=10,
 )
 
 # Calculations for plotting
 dem_diff = trav_hs["dem"] - DEM
-dem_diff = np.where(dem_diff == 0, np.nan, dem_diff)
-targets = np.where(init["marked"] == 0, np.nan, init["marked"])
+dem_diff[dem_diff==0] = np.nan
+targets = init['marked']
+targets[targets==0] = np.nan
 
 # Plotting Step 1 results (optional)
 def _plot_step1():
     """Plot DEM processing results."""
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-    axes[0, 0].imshow(np.where(np.isnan(targets), 0, 1), origin="lower")
+    axes[0, 0].imshow(np.where(np.isnan(targets), 0, 1))
     axes[0, 0].set_title("Target Points")
-    im1 = axes[0, 1].imshow(trav_hs["dem"], origin="lower")
+    im1 = axes[0, 1].imshow(trav_hs["dem"])
     axes[0, 1].set_title("Processed DEM")
     plt.colorbar(im1, ax=axes[0, 1])
-    im2 = axes[1, 0].imshow(dem_diff, origin="lower")
+    im2 = axes[1, 0].imshow(dem_diff)
     axes[1, 0].set_title("DEM differences")
     plt.colorbar(im2, ax=axes[1, 0])
-    im3 = axes[1, 1].imshow(trav_hs["direction"], origin="lower")
+    im3 = axes[1, 1].imshow(trav_hs["direction"])
     axes[1, 1].set_title("Flow Direction")
     plt.colorbar(im3, ax=axes[1, 1])
     plt.tight_layout()
     plt.savefig("workflow_step1.png", dpi=150)
+    plt.show()
     plt.close()
+_plot_step1()
 
 
 # =============================================================================
