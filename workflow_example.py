@@ -85,30 +85,11 @@ _plot_inputs()
 # 1. A processed DEM with elevations adjusted to ensure drainage
 # 2. A map of flow directions (1=down, 2=left, 3=up, 4=right)
 #
-# Option 2: Process DEM within a pre-defined watershed mask (used here)
-# The mask file should have values of 1 for cells inside the domain and 0 elsewhere.
+# Run one of the option blocks below (comment out the others). Option 4 has no code;
+# see Condon and Maxwell (2019) and Downwinding workflows 3 and 4 for that workflow.
 
-# Setup target points
-init = init_queue(DEM)
 
-# Process the DEM
-trav_hs = d4_traverse_b(
-    DEM,
-    init["queue"].copy(),
-    init["marked"].copy(),
-    basins=init["basins"].copy(),
-    epsilon=0,
-    n_chunk=10,
-)
-
-# Calculations for plotting
-dem_diff = trav_hs["dem"] - DEM
-dem_diff[dem_diff==0] = np.nan
-targets = init['marked']
-targets[targets==0] = np.nan
-
-# Plotting Step 1 results (optional)
-def _plot_step1():
+def _plot_step1(trav_hs, dem_diff, targets):
     """Plot DEM processing results."""
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     axes[0, 0].imshow(np.where(np.isnan(targets), 0, 1))
@@ -125,7 +106,84 @@ def _plot_step1():
     plt.tight_layout()
     plt.savefig("workflow_step1.png", dpi=150)
     plt.close()
-_plot_step1()
+
+
+# Option 1: If you have rectangular DEM and all border cells will be used as target exit points
+# In this case PriorityFlow will ensure that every grid cell in the domain drains to the edge
+# of the domain without identifying the desired drainage points a priori
+#setup target points
+init = init_queue(DEM)
+#process the DEM
+trav_hs = d4_traverse_b(
+    DEM,
+    init["queue"].copy(),
+    init["marked"].copy(),
+    basins=init["basins"].copy(),
+    epsilon=0,
+    n_chunk=10,
+)
+#some calculations for plotting
+dem_diff = trav_hs["dem"] - DEM
+dem_diff[dem_diff == 0] = np.nan
+targets = init["marked"].copy()
+targets[targets == 0] = np.nan
+#plotting
+_plot_step1(trav_hs, dem_diff, targets)
+
+
+# Option 2: If you only want to process your DEM within a pre-defined watershed mask and all
+# border cells of that mask will be used as target exit points. Every point in the domain
+# drains to one of the edge points. Note: mask should have 1 for cells inside domain, 0 elsewhere.
+#setup target points
+init = init_queue(DEM, domainmask=watershed_mask)
+#process the DEM
+trav_hs = d4_traverse_b(
+    DEM,
+    init["queue"].copy(),
+    init["marked"].copy(),
+    mask=watershed_mask,
+    basins=init["basins"].copy(),
+    epsilon=0,
+    n_chunk=10,
+)
+#some calculations for plotting
+dem_diff = trav_hs["dem"] - DEM
+dem_diff[dem_diff == 0] = np.nan
+targets = init["marked"].copy()
+targets[targets == 0] = np.nan
+#plotting
+_plot_step1(trav_hs, dem_diff, targets)
+
+
+# Option 3: If you want to have more control over the set of target points used in the processing.
+# E.g. provide InitQueue with a river mask and a watershed mask so it identifies only those points
+# on the watershed mask that touch a boundary of your domain as target outlet points.
+#setup target points
+init = init_queue(DEM, domainmask=watershed_mask, initmask=river_mask)
+#process the DEM
+trav_hs = d4_traverse_b(
+    DEM,
+    init["queue"].copy(),
+    init["marked"].copy(),
+    mask=watershed_mask,
+    basins=init["basins"].copy(),
+    epsilon=0,
+    n_chunk=10,
+)
+#some calculations for plotting
+dem_diff = trav_hs["dem"] - DEM
+dem_diff[dem_diff == 0] = np.nan
+targets = init["marked"].copy()
+targets[targets == 0] = np.nan
+#plotting
+_plot_step1(trav_hs, dem_diff, targets)
+
+
+# Option 4: If you want to enforce flow paths along a pre-defined drainage network.
+# In that case you run a modified workflow: first process only the cells on the pre-defined
+# drainage network so they drain out of the domain; then a second pass so every grid cell
+# not on that network can drain to it. Described in Condon and Maxwell (2019) and
+# documented in Downwinding workflows 3 and 4. (No code block here.)
 
 
 # =============================================================================
