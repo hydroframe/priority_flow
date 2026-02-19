@@ -106,8 +106,7 @@ def calc_stream_order(
         for i in range(len(basin_id)):
             btemp = basin_id[i]
             blist2 = np.where(segments2 == btemp)
-            segments[blist2] = order_no[i]
-        
+            segments[blist2] = order_no[i, 0]  # Scalar value for order
         output_dict = {"summary": summary, "order_mask": segments}
     
     return output_dict 

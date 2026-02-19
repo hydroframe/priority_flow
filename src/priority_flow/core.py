@@ -146,7 +146,7 @@ def init_queue(
             outside_dirs = np.where(temp == 0)[0]
             if len(outside_dirs) > 0:
                 # Use first available outside direction
-                direction[xtemp, ytemp] = kd[outside_dirs[0], 2]
+                direction[int(xtemp), int(ytemp)] = kd[outside_dirs[0], 2]
     
     return {
         'marked': marked,

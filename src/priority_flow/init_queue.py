@@ -143,7 +143,7 @@ def init_queue(
         
         # Find direction with minimum mask value (prefer outside domain)
         dtemp = np.argmin(temp)
-        direction[xtemp, ytemp] = kd[dtemp, 2]
+        direction[int(xtemp), int(ytemp)] = kd[dtemp, 2]
     
     output_list = {
         "mask": initmask,

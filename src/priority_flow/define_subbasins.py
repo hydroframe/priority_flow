@@ -229,11 +229,13 @@ def calc_subbasins(
             summary[sbtemp - 1, 6] += 1  # Adjust for 0-indexing
             
             # Look for cells that drain to this cell
+            # R: if(xus*yus>0 & xus<=nx & yus<=ny) - 1-based
+            # Python 0-based: valid 0..nx-1, 0..ny-1
             for d in range(4):
                 xus = xtemp - kd[d, 0]
                 yus = ytemp - kd[d, 1]
-                
-                if (xus * yus > 0 and xus < nx and yus < ny):
+
+                if xus >= 0 and yus >= 0 and xus < nx and yus < ny:
                     if mask[xus, yus] == 1 and subbasinA[xus, yus] == 0:
                         if direction[xus, yus] == d4[d]:
                             # Assign the subbasin number to the upstream cell

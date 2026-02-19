@@ -55,7 +55,7 @@ def fix_drainage(
     -------
     Dict[str, np.ndarray]
         A dictionary containing:
-        - 'dem_adj': Adjusted DEM matrix with corrected elevations
+        - 'dem.adj': Adjusted DEM matrix with corrected elevations (matches R FixDrainage)
         - 'processed': Matrix marking which cells were processed/adjusted
     
     Notes
@@ -114,8 +114,9 @@ def fix_drainage(
             tempx = indx + ku[d, 0]
             tempy = indy + ku[d, 1]
             
-            # If it's pointing to the cell, is within the mask of cells to be processed, and has epsilon < threshold
-            if (tempx * tempy > 0 and tempx < nx and tempy < ny):
+            # R: if(tempx*tempy>0 & tempx<nx & tempy<ny) - 1-based valid 1..nx-1, 1..ny-1
+            # Python 0-based: valid 0..nx-1, 0..ny-1
+            if tempx >= 0 and tempy >= 0 and tempx < nx and tempy < ny:
                 if ((d + 1 - dir2[tempx, tempy]) == 0 and mask[tempx, tempy] == 1):
                     if (dem2[tempx, tempy] - dem2[indx, indy]) < bank_epsilon:
                         dem2[tempx, tempy] = dem2[indx, indy] + bank_epsilon
