@@ -16,12 +16,6 @@ mask files are provided with the PriorityFlow library.
 import sys
 from pathlib import Path
 
-# Ensure package is on path when run from project root
-_project_root = Path(__file__).resolve().parent
-_src = _project_root / "src"
-if _src.exists() and str(_src) not in sys.path:
-    sys.path.insert(0, str(_src))
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -66,19 +60,19 @@ print(f"DEM elevation range: {DEM.min():.2f} to {DEM.max():.2f}")
 def _plot_inputs():
     """Plot the three input datasets."""
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
-    im0 = axes[0].imshow(DEM, origin="lower")
+    im0 = axes[0].imshow(DEM, cmap='RdBu' )
     axes[0].set_title("Elevation")
     plt.colorbar(im0, ax=axes[0])
-    im1 = axes[1].imshow(watershed_mask, origin="lower")
+    im1 = axes[1].imshow(watershed_mask, cmap='RdBu' )
     axes[1].set_title("Watershed Mask")
     plt.colorbar(im1, ax=axes[1])
-    im2 = axes[2].imshow(river_mask, origin="lower")
+    im2 = axes[2].imshow(river_mask, cmap='RdBu' )
     axes[2].set_title("River Network")
     plt.colorbar(im2, ax=axes[2])
     plt.tight_layout()
     plt.savefig("workflow_inputs.png", dpi=150)
     plt.close()
-
+_plot_inputs()
 
 # =============================================================================
 # Step 1: Processing the DEM
