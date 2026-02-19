@@ -124,7 +124,6 @@ def _plot_step1():
     plt.colorbar(im3, ax=axes[1, 1])
     plt.tight_layout()
     plt.savefig("workflow_step1.png", dpi=150)
-    plt.show()
     plt.close()
 _plot_step1()
 
