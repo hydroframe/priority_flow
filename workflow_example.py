@@ -89,7 +89,7 @@ _plot_inputs()
 # The mask file should have values of 1 for cells inside the domain and 0 elsewhere.
 
 # Setup target points
-init = init_queue(DEM, domain_mask=watershed_mask)
+init = init_queue(DEM)
 
 # Process the DEM
 trav_hs = d4_traverse_b(
