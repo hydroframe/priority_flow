@@ -23,8 +23,8 @@ def load_dem():
     Returns
     -------
     numpy.ndarray
-        A 2D array of elevation values with shape (172, 215) representing
-        the domain dimensions (nrow=172, ncol=215).
+        A 2D array of elevation values with shape (215, 172) representing
+        the domain dimensions (nrow=215, ncol=172).
         
     Examples
     --------
@@ -49,7 +49,7 @@ def load_watershed_mask():
     -------
     numpy.ndarray
         A 2D array of 0's and 1's showing the watershed extent 
-        (1=inside the watershed, 0=outside the watershed) with shape (172, 215).
+        (1=inside the watershed, 0=outside the watershed) with shape (215, 172).
         
     Examples
     --------
@@ -74,7 +74,7 @@ def load_river_mask():
     -------
     numpy.ndarray
         A 2D array of 0's and 1's showing the location of river cells 
-        (1=river, 0=non-river) with shape (172, 215).
+        (1=river, 0=non-river) with shape (215, 172).
         
     Examples
     --------
