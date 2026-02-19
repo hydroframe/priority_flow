@@ -1,13 +1,31 @@
 """
-Init Queue functions for PriorityFlow.
+Initialize queue for topographic processing.
 
-This module provides functions to initialize a queue and initialize marked and step
-matrices for DEM processing. It sets up the initial processing queue for priority
-flood algorithms and identifies outlet cells.
+Line-by-line translation of Init_Queue.R from the R PriorityFlow package.
+R uses 1-based indexing and column-major (Fortran) order; we use 0-based
+and NumPy Fortran order so queue and behaviour match R.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple
+
+####################################################################
+# PriorityFlow - Topographic Processing Toolkit for Hydrologic Models
+# Copyright (C) 2018  Laura Condon (lecondon@email.arizona.edu)
+# Contributors - Reed Maxwell (rmaxwell@mines.edu)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation version 3 of the License
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+####################################################################
 
 
 def init_queue(
@@ -15,142 +33,130 @@ def init_queue(
     initmask: Optional[np.ndarray] = None,
     domainmask: Optional[np.ndarray] = None,
     border: Optional[np.ndarray] = None,
-    d4: Tuple[int, int, int, int] = (1, 2, 3, 4)
+    d4: Tuple[int, int, int, int] = (1, 2, 3, 4),
 ) -> Dict[str, np.ndarray]:
     """
-    Initialize queue for topographic processing.
-    
-    Sets up a queue and initializes marked and step matrices for DEM processing.
-    This function identifies outlet cells and prepares the initial processing queue
-    for priority flood algorithms.
-    
-    Parameters
-    ----------
-    dem : np.ndarray
-        Digital elevation model matrix
-    initmask : np.ndarray, optional
-        Mask of the same dimensions as dem denoting a subset of cells to be considered
-        for the queue (e.g., if you want to setup a run starting with only river cells).
-        If no init mask is included, every border cell will be added to the queue.
-    domainmask : np.ndarray, optional
-        Mask of the domain extent to be considered. If no domain mask is provided,
-        boundaries will be calculated from the rectangular extent.
-    border : np.ndarray, optional
-        Alternatively you can input your own border rather than having it be calculated
-        from the domain mask. For example, if you want to have the river network and
-        the borders combined, you can input this as a border.
-    d4 : Tuple[int, int, int, int], optional
-        Directional numbering system: down, left, top, right. Defaults to (1, 2, 3, 4)
-    
-    Returns
-    -------
-    Dict[str, np.ndarray]
-        A dictionary containing:
-        - 'mask': Matrix indicating the cells that were input as potential output points
-        - 'queue': List of the outlet cells with three columns: x, y, elevation
-        - 'marked': Matrix indicating the outlet cells that were identified (1=outlet, 0=not outlet)
-        - 'basins': Matrix indicating the basin number for each outlet point (each outlet is assigned a unique basin number)
-        - 'direction': Matrix indicating the flow direction for each outlet point (follows the d4 numbering scheme)
-    
-    Notes
-    -----
-    This function implements a queue initialization algorithm that:
-    1. Sets up processing matrices (marked, step, basin, direction)
-    2. Identifies border cells or uses provided border
-    3. Creates initial processing queue from outlet cells
-    4. Assigns flow directions pointing out of the domain
-    5. Prepares basin numbering for outlet cells
-    
-    The algorithm handles:
-    - Automatic border detection from domain mask
-    - Custom border input for specialized processing
-    - Outlet cell identification and queue setup
-    - Flow direction assignment for domain boundaries
-    - Basin numbering for multiple outlets
+    Initialize queue for topographic processing (InitQueue in R).
     """
-    # Initialize queue and matrices
-    nx, ny = dem.shape
+    # initialize queue and matrices
+    # R: ny=ncol(dem)  nx=nrow(dem)
+    ny = dem.shape[1]
+    nx = dem.shape[0]
     queue = None
+    # R: marked=matrix(0, nrow=nx, ncol=ny)
     marked = np.zeros((nx, ny))
+    # R: step=matrix(0, nrow=nx, ncol=ny)
     step = np.zeros((nx, ny))
-    
-    # Setup flow directions
-    # D4 neighbors
-    kd = np.array([
-        [0, -1, d4[0]],    # Down
-        [-1, 0, d4[1]],    # Left
-        [0, 1, d4[2]],     # Top
-        [1, 0, d4[3]]      # Right
-    ])
-    
+
+    # setup flow directions
+    # D4 neighbors  # R: kd=matrix(0, nrow=4, ncol=3)  ordered down, left top right
+    kd = np.zeros((4, 3))
+    # R: kd[,1]=c(0,-1,0,1)
+    kd[:, 0] = [0, -1, 0, 1]
+    # R: kd[,2]=c(-1,0,1,0)
+    kd[:, 1] = [-1, 0, 1, 0]
+    # R: kd[,3]=c(d4[1], d4[2], d4[3], d4[4])
+    kd[:, 2] = [d4[0], d4[1], d4[2], d4[3]]
+
+    # R: if(missing(initmask)){
     if initmask is None:
-        print("No init mask provided, all border cells will be added to queue")
+        # R: print("No init mask provided all border cells will be added to queue")
+        print("No init mask provided all border cells will be added to queue")
+        # R: initmask=matrix(1, nrow=nx, ncol=ny)
         initmask = np.ones((nx, ny))
-    
+    # R: }
+
+    # R: if(missing(domainmask)){
     if domainmask is None:
-        print("No domain mask provided, using entire domain")
+        # R: print("No domain mask provided using entire domain")
+        print("No domain mask provided using entire domain")
+        # R: domainmask=matrix(1, nrow=nx, ncol=ny)
         domainmask = np.ones((nx, ny))
-    
+    # R: }
+
     # Setup the border
-    # TODO: we can call get_border.py here to avoid re-implementing the same logic
+    # R: if(missing(border)){
     if border is None:
+        # R: print("No border provided, setting border using domain mask")
         print("No border provided, setting border using domain mask")
+        # R: border=matrix(1, nrow=nx, ncol=ny)
         border = np.ones((nx, ny))
-        border[1:(nx-1), 1:(ny-1)] = (
-            domainmask[0:(nx-2), 1:(ny-1)] +
-            domainmask[2:nx, 1:(ny-1)] +
-            domainmask[1:(nx-1), 0:(ny-2)] +
-            domainmask[1:(nx-1), 2:ny]
+        # R: border[2:(nx-1), 2:(ny-1)]= domainmask[1:(nx-2), 2:(ny-1)] + ...
+        #    1-based R: rows 2..nx-1, cols 2..ny-1  -> Python 0-based: rows 1..nx-2, cols 1..ny-2
+        border[1 : (nx - 1), 1 : (ny - 1)] = (
+            domainmask[0 : (nx - 2), 1 : (ny - 1)]
+            + domainmask[2:nx, 1 : (ny - 1)]
+            + domainmask[1 : (nx - 1), 0 : (ny - 2)]
+            + domainmask[1 : (nx - 1), 2:ny]
         )
+        # R: border=border*domainmask
         border = border * domainmask
+        # R: border[which(border<4 & border!=0)]=1
         border[(border < 4) & (border != 0)] = 1
+        # R: border[border==4]=0
         border[border == 4] = 0
-    
-    # Initialize basin matrix and identify outlet cells
+    # R: }
+
+    # R: basin=matrix(0, nrow=nx, ncol=ny)
     basin = np.zeros((nx, ny))
+    # R: maskbound=initmask*border
     maskbound = initmask * border
-    blist = np.where(maskbound > 0)[0]  # Array indices
-    binlist = np.unravel_index(blist, (nx, ny))  # xy indices
-    
-    # Create queue with x, y coordinates and elevations
-    if len(blist) > 0:
-        queue = np.column_stack((binlist[0], binlist[1], dem.flat[blist]))
-    else:
-        queue = np.empty((0, 3))
-    
-    # Mark outlet cells and assign basin numbers
-    marked.flat[blist] = 1
-    basin.flat[blist] = np.arange(1, len(blist) + 1)
-    
-    # Assign flow direction to point out of the domain
+    # R: blist=which(maskbound>0)  # array indices (1-based, column-major in R)
+    # In Python: use column-major (Fortran) so order matches R
+    dem_flat_f = dem.ravel(order="F")
+    maskbound_flat_f = maskbound.ravel(order="F")
+    blist = np.where(maskbound_flat_f > 0)[0]  # 0-based flat indices, column-major order
+    # R: binlist=which(maskbound>0, arr.ind=T)  # xy indices (row,col in R)
+    # column-major: flat index k -> row = k % nx, col = k // nx (0-based)
+    binlist_rows = blist % nx
+    binlist_cols = blist // nx
+    # R: queue=cbind(binlist, dem[blist])  -> columns: row, col, elevation
+    queue = np.column_stack((binlist_rows, binlist_cols, dem_flat_f[blist]))
+    # R: marked[blist]=1  (linear index in column-major)
+    marked[binlist_rows, binlist_cols] = 1
+    # R: basin[blist]=1:length(blist)
+    basin[binlist_rows, binlist_cols] = np.arange(1, len(blist) + 1)
+
+    # assign flow direction to point out of the domain
+    # R: direction=matrix(NA, nrow=nx, ncol=ny)
     direction = np.full((nx, ny), np.nan)
-    
+    # R: for(i in 1:nrow(queue)){
     for i in range(queue.shape[0]):
-        xtemp = int(queue[i, 0])
-        ytemp = int(queue[i, 1])
+        # R: xtemp=queue[i,1]   (row in R, 1-based)
+        xtemp = int(queue[i, 0])  # row, 0-based
+        # R: ytemp=queue[i,2]   (col in R, 1-based)
+        ytemp = int(queue[i, 1])  # col, 0-based
+        # R: temp=rep(0,4)
         temp = np.zeros(4)
-        
+        # R: for(d in 1:4){
         for d in range(4):
+            # R: xtest=xtemp+kd[d,1]
             xtest = xtemp + kd[d, 0]
+            # R: ytest=ytemp+kd[d,2]
             ytest = ytemp + kd[d, 1]
-            
-            # If temp2 falls outside the domain, give it a value of 0
-            if (xtest * ytest == 0 or xtest >= nx or ytest >= ny):
+
+            # R: if(xtest*ytest==0 | xtest>nx | ytest>ny){
+            # In R valid is 1..nx, 1..ny. So outside: xtest<1 or ytest<1 or xtest>nx or ytest>ny
+            # Python 0-based: outside xtest<0 or ytest<0 or xtest>=nx or ytest>=ny
+            if xtest < 0 or ytest < 0 or xtest >= nx or ytest >= ny:
+                # R: temp[d]=0
                 temp[d] = 0
             else:
-                # Give it a value of the mask
-                temp[d] = domainmask[xtest, ytest]
-        
-        # Find direction with minimum mask value (prefer outside domain)
-        dtemp = np.argmin(temp)
-        direction[int(xtemp), int(ytemp)] = kd[dtemp, 2]
-    
+                # R: temp[d]=domainmask[xtest, ytest]
+                temp[d] = domainmask[int(xtest), int(ytest)]
+        # R: dtemp=which.min(temp)  (1-based index)
+        dtemp = np.argmin(temp)  # 0-based index
+        # R: direction[xtemp,ytemp]=kd[dtemp,3]
+        direction[xtemp, ytemp] = kd[dtemp, 2]
+    # R: }
+
+    # R: output_list=list("mask"=initmask,"queue" = queue, "marked"=marked, "basins"=basin, "direction"=direction)
     output_list = {
         "mask": initmask,
         "queue": queue,
         "marked": marked,
         "basins": basin,
-        "direction": direction
+        "direction": direction,
     }
-    
-    return output_list 
+    # R: return(output_list)
+    return output_list
