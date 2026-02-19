@@ -96,7 +96,6 @@ trav_hs = d4_traverse_b(
     DEM,
     init["queue"],
     init["marked"],
-    mask=watershed_mask,
     basins=init["basins"],
     epsilon=0,
     n_chunk=10,
