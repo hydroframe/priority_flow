@@ -199,7 +199,10 @@ def d4_traverse_b(
                         "P", split, "Q2", nqueuetemp, "nstep=", nstep, "Q1 Max:", q1max
                     )
                 if queuetemp is not None and queuetemp.size > 0:
-                    queue2 = np.vstack([queue2, queuetemp])
+                    if queue2 is None:
+                        queue2 = queuetemp
+                    else:
+                        queue2 = np.vstack([queue2, queuetemp])
                 queuetemp = None
                 # R: qsort=queue2[order(queue2[,3]),]  queue1=qsort[1:nchunk,]  queue2=qsort[-(1:nchunk),]  th=queue2[1,3]
                 qsort = queue2[np.argsort(queue2[:, 2], kind="stable")]
