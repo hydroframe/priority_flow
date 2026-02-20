@@ -33,7 +33,7 @@ from .linear_distance import lin_dist
 from .flat_fix import fix_flat
 from .get_border import get_border
 from .find_orphan import find_orphan
-from .drainage_area import drainage_area, calculate_drainage_area_alt
+from .drainage_area import drainage_area
 from .define_watershed import delin_watershed
 from .border_direction_fix import fix_border_dir
 from .calc_flow import calc_flow
@@ -64,7 +64,6 @@ __all__ = [
     "get_border",
     "find_orphan",
     "drainage_area",
-    "calculate_drainage_area_alt",
     "delin_watershed",
     "fix_border_dir",
     "calc_flow",
