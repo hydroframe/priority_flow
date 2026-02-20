@@ -238,14 +238,14 @@ def _plot_step2():
     dif_hill_plot = np.where(dif_hill == 0, np.nan, dif_hill)
 
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
-    im0 = axes[0].imshow(dif_plot, origin="lower")
+    im0 = axes[0].imshow(dif_plot)
     axes[0].set_title("All Elev. Diffs")
     plt.colorbar(im0, ax=axes[0])
-    im1 = axes[1].imshow(dif_riv_plot, origin="lower")
+    im1 = axes[1].imshow(dif_riv_plot)
     axes[1].set_title("Stream Cell Diffs")
     plt.colorbar(im1, ax=axes[1])
     if np.any(~np.isnan(dif_hill_plot)):
-        im2 = axes[2].imshow(dif_hill_plot, origin="lower")
+        im2 = axes[2].imshow(dif_hill_plot)
         axes[2].set_title("Non-Stream Cell Diffs")
         plt.colorbar(im2, ax=axes[2])
     plt.tight_layout()
