@@ -79,7 +79,7 @@ def d4_traverse_b(
     # R: if(nqueue>nchunk){
     if nqueue > nchunk:
         # R: qsort=queue[order(queue[,3]),]
-        qsort = queue[np.argsort(queue[:, 2])]
+        qsort = queue[np.argsort(queue[:, 2], kind="stable")]
         # R: queue1=qsort[1:nchunk,]  queue2=qsort[-(1:nchunk),]
         queue1 = qsort[:nchunk].copy()
         queue2 = qsort[nchunk:].copy()
@@ -202,7 +202,7 @@ def d4_traverse_b(
                     queue2 = np.vstack([queue2, queuetemp])
                 queuetemp = None
                 # R: qsort=queue2[order(queue2[,3]),]  queue1=qsort[1:nchunk,]  queue2=qsort[-(1:nchunk),]  th=queue2[1,3]
-                qsort = queue2[np.argsort(queue2[:, 2])]
+                qsort = queue2[np.argsort(queue2[:, 2], kind="stable")]
                 queue1 = qsort[:nchunk].copy()
                 queue2 = qsort[nchunk:].copy()
                 th = float(queue2[0, 2])
