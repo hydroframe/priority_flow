@@ -1,100 +1,52 @@
 """
-River Smoothing functions for PriorityFlow.
+Apply smoothing to a DEM along a pre-defined stream network.
 
-This module provides functions to smooth a DEM along a pre-defined stream network,
-requiring pre-defined stream segments and subbasins from the CalcSubbasins function.
+Line-by-line translation of River_Smoothing.R (RiverSmooth) from the R
+PriorityFlow package. R uses 1-based indexing; we use 0-based. Summary
+coordinates in river_summary are 0-based (row, col) for array indexing.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple
+
 from .fix_drainage import fix_drainage
+
+####################################################################
+# PriorityFlow - Topographic Processing Toolkit for Hydrologic Models
+# Copyright (C) 2018  Laura Condon (lecondon@email.arizona.edu)
+# Contributors - Reed Maxwell (rmaxwell@mines.edu)
+####################################################################
 
 
 def river_smooth(
     dem: np.ndarray,
     direction: np.ndarray,
     mask: Optional[np.ndarray] = None,
-    river_summary: np.ndarray = None,
-    river_segments: np.ndarray = None,
+    river_summary: Optional[np.ndarray] = None,
+    river_segments: Optional[np.ndarray] = None,
     bank_epsilon: float = 0.01,
     river_epsilon: float = 0.0,
     d4: Tuple[int, int, int, int] = (1, 2, 3, 4),
-    printflag: bool = False
-) -> Dict[str, Union[np.ndarray, np.ndarray]]:
-    """
-    Apply smoothing to a DEM along a pre-defined stream network.
-    
-    This function will smooth a DEM along a stream network. It requires pre-defined stream segments 
-    and subbasins which can be obtained using the CalcSubbasins function.
-    
-    Parameters
-    ----------
-    dem : np.ndarray
-        Digital Elevation Model matrix
-    direction : np.ndarray
-        Flow direction matrix
-    mask : np.ndarray, optional
-        Domain mask matrix. Defaults to processing everything if not provided.
-    river_summary : np.ndarray
-        A table summarizing the stream segments in a domain with 1 row per stream segment
-        and 7 columns: (1) subbasin number, (2) x and (3) y index of the upstream end of the stream segment,
-        (4) x and (5) y index of the downstream end of the river segment, (6) the subbasin number for the 
-        downstream basin (-1 indicates a subbasin draining out of the domain), (7) drainage area of the subbasin
-    river_segments : np.ndarray
-        Nx by Ny matrix indicating the subbasin number for all grid cells on the river network
-        (all cells not on the river network should be 0)
-    bank_epsilon : float, optional
-        The minimum elevation difference between cells walking up the banks from the river network. Defaults to 0.01.
-    river_epsilon : float, optional
-        The minimum elevation difference between cells along the river. Defaults to 0.0.
-    d4 : Tuple[int, int, int, int], optional
-        D4 direction numbering scheme. Defaults to (1, 2, 3, 4) for (down, left, up, right).
-    printflag : bool, optional
-        Flag to enable debug printing. Defaults to False.
-    
-    Returns
-    -------
-    Dict[str, Union[np.ndarray, np.ndarray]]
-        A dictionary containing:
-        - 'dem.adj': A matrix with the adjusted DEM values following the river smoothing operation
-        - 'processed': A matrix indicating the cells that were processed by this routine (1=processed, 0=not processed)
-        - 'summary': A summary of the reach properties with columns for segment ID, start/end coordinates, 
-          length, elevations, and delta applied along the segment
-    
-    Notes
-    -----
-    This function implements a river network smoothing algorithm that:
-    1. Processes river segments from downstream to upstream
-    2. Ensures proper elevation gradients along river channels
-    3. Applies minimum elevation differences between river cells
-    4. Fixes drainage issues on hillslopes adjacent to river cells
-    5. Maintains topological consistency of the river network
-    
-    The algorithm handles:
-    - Terminal river segments (draining out of domain)
-    - Internal river segments (draining to other segments)
-    - Elevation smoothing along river channels
-    - Hillslope drainage fixes
-    - River network topology validation
-    """
-    nx, ny = direction.shape
-    
-    # Default to processing everything if mask not provided
+    printflag: bool = False,
+) -> Dict[str, np.ndarray]:
+    # R: nx=dim(direction)[1]  ny=dim(direction)[2]  (set after dir2)
+    nx = direction.shape[0]
+    ny = direction.shape[1]
+
+    # D4 neighbors - Rows: down, left top right. Columns: (1)deltax, (2)deltay
+    # R: kd=matrix(0, nrow=4, ncol=4)  kd[,1]=c(0,-1,0,1)  kd[,2]=c(-1,0,1,0)
+    kd = np.zeros((4, 2))
+    kd[:, 0] = [0, -1, 0, 1]
+    kd[:, 1] = [-1, 0, 1, 0]
+
+    # R: if(missing(mask)){mask=matrix(1, nrow=nx, ncol=ny)}
     if mask is None:
         mask = np.ones((nx, ny))
-    
-    # D4 neighbors
-    # Rows: down, left, top, right
-    # Columns: (1) deltax, (2) deltay, direction number if walking downstream, and (4) upstream
-    kd = np.array([
-        [0, -1, 1, 3],    # Down
-        [-1, 0, 2, 2],    # Left
-        [0, 1, 3, 1],     # Top
-        [1, 0, 4, 4]      # Right
-    ])
-    
-    # Renumber the directions to 1=down, 2=left, 3=up, 4=right if a different numbering scheme was used
+
+    # renumber the directions to 1=down, 2=left, 3=up, 4=right if a different numbering scheme was used
+    # R: dir2=direction
     dir2 = direction.copy()
+    # R: if(d4[1]!=1){dir2[which(direction==d4[1])]=1}  etc.
     if d4[0] != 1:
         dir2[direction == d4[0]] = 1
     if d4[1] != 2:
@@ -103,156 +55,227 @@ def river_smooth(
         dir2[direction == d4[2]] = 3
     if d4[3] != 4:
         dir2[direction == d4[3]] = 4
-    
-    # Setup a river list
+
+    # setup a river list
+    # R: nriver=nrow(river.summary)
     nriver = river_summary.shape[0]
-    marked_segments = np.zeros(nriver, dtype=int)  # marker for keeping track of which reaches are processed
-    marked_matrix = np.zeros((nx, ny), dtype=int)
-    
+    # R: marked.segments=rep(0,nriver)
+    marked_segments = np.zeros(nriver)
+    # R: marked.matrix=matrix(0, ncol=ny, nrow=nx)
+    marked_matrix = np.zeros((nx, ny))
+
     # Setup a smoothing summary
+    # R: riversmooth.summary=matrix(0, nrow=nriver, ncol=9)
     riversmooth_summary = np.zeros((nriver, 9))
-    # Column names: SegmentID, Start.X, Start.Y, End.X, End.Y, Length, Top.Elevation, Bottom.Elevation, delta
-    # TODO: This should be a dataframe!
-    riversmooth_summary[:, :5] = river_summary[:, :5]
-    
-    # Make a mask of the hillslope cells
+    # R: riversmooth.summary[,1:5]=river.summary[,1:5]
+    riversmooth_summary[:, 0:5] = river_summary[:, 0:5]
+
+    # make a mask of the hillslope cells
+    # R: hillmask=mask  hillmask[which(river.segments>0)]=0
     hillmask = mask.copy()
     hillmask[river_segments > 0] = 0
-    
+
     # First make a list of all the terminal river reaches
-    # queue = which(river.summary[,6]==(-1))
-    queue = np.where(river_summary[:, 5] <= 0)[0]  # Note: R is 1-indexed, Python is 0-indexed
-    if len(queue) > 0:
+    # R: queue=which(river.summary[,6]<=(0))
+    queue = np.where(river_summary[:, 5] <= 0)[0]
+    # R: if(length(queue)>0){active=TRUE}else{print("No terminal river segments...")}
+    if queue.size > 0:
         active = True
     else:
         print("No terminal river segments provided, not adjusting DEM")
         active = False
-    
-    # Start a new dem
+
+    # R: dem2=dem
     dem2 = dem.copy()
-    
-    # Get the length of every river segment
-    max_river_index = int(np.max(river_summary[:, 0]))
-    river_length = np.zeros(max_river_index + 1)  # +1 because river indices start at 1
+
+    # get the length of every river segment
+    # R: river.length=rep(0,max(river.summary[,1]))
+    max_basin_id = int(np.max(river_summary[:, 0]))
+    river_length = np.zeros(max_basin_id + 1)
+    # R: for(i in 1:nx){ for(j in 1:ny){ rtemp=river.segments[i,j]; river.length[rtemp]=river.length[rtemp]+1 }}
     for i in range(nx):
         for j in range(ny):
             rtemp = int(river_segments[i, j])
             if rtemp > 0:
                 river_length[rtemp] = river_length[rtemp] + 1
-    
+
     # Loop over the river segments working upstream
-    # Starting from every terminal segment (i.e., segments with a downstream river number of -1)
     while active:
-        indr = queue[0]
-        r = int(river_summary[indr, 0])  # river segment number
-        rdown = int(river_summary[indr, 5])
-        length = int(river_length[r])
+        # R: indr=queue[1]
+        indr = int(queue[0])
+        # R: r=river.summary[indr,1]
+        r = int(river_summary[indr, 0])
+        # R: rdown=river.summary[indr,6]
+        rdown = river_summary[indr, 5]
+        # R: length=river.length[r]
+        seg_length = int(river_length[r])
+        # R: riversmooth.summary[indr,6]=river.length[r]
         riversmooth_summary[indr, 5] = river_length[r]
-        
-        # Find the top and bottom elevations of the current river segment
-        top = dem2[int(river_summary[indr, 1]), int(river_summary[indr, 2])]  # Start coordinates
-        
-        # If it's a terminal reach then the bottom elevation will be the bottom of the reach
+
+        # find the top and bottom elevations of the current river segment
+        # R: top=dem2[river.summary[indr,2], river.summary[indr,3]]
+        top = dem2[
+            int(river_summary[indr, 1]),
+            int(river_summary[indr, 2]),
+        ]
+        # R: if(rdown<=0){ bottom=... length=length-1 } else{ bdir=... bottom=... }
         if rdown <= 0:
-            bottom = dem2[int(river_summary[indr, 3]), int(river_summary[indr, 4])]  # End coordinates
-            length = length - 1
+            # R: bottom=dem2[river.summary[indr,4], river.summary[indr,5]]
+            bottom = dem2[
+                int(river_summary[indr, 3]),
+                int(river_summary[indr, 4]),
+            ]
+            seg_length = seg_length - 1
         else:
-            # If not then use the elevation downstream of the bottom point of the reach
-            bdir = int(dir2[int(river_summary[indr, 3]), int(river_summary[indr, 4])])
-            bottom = dem2[int(river_summary[indr, 3]) + kd[bdir-1, 0], int(river_summary[indr, 4]) + kd[bdir-1, 1]]
-        
-        topmin = bottom + river_epsilon * length
+            # R: bdir=dir2[river.summary[indr,4], river.summary[indr,5]]
+            bdir = int(
+                dir2[
+                    int(river_summary[indr, 3]),
+                    int(river_summary[indr, 4]),
+                ]
+            )
+            # R: bottom=dem2[(river.summary[indr,4]+kd[bdir,1]), (river.summary[indr,5]+kd[bdir,2])]
+            # R uses 1-based dir (1..4); kd rows are 1..4 in R, so kd[bdir,] in Python is kd[bdir-1,]
+            bottom = dem2[
+                int(river_summary[indr, 3]) + int(kd[bdir - 1, 0]),
+                int(river_summary[indr, 4]) + int(kd[bdir - 1, 1]),
+            ]
+
+        # R: topmin=bottom+river.epsilon*length
+        topmin = bottom + river_epsilon * seg_length
+        # R: if(top<topmin){
         if top < topmin:
-            # Calculate the delta from the original dem
-            top0 = dem[int(river_summary[indr, 1]), int(river_summary[indr, 2])]
+            # R: top0=dem[river.summary[indr,2], river.summary[indr,3]]
+            top0 = dem[
+                int(river_summary[indr, 1]),
+                int(river_summary[indr, 2]),
+            ]
             if rdown > 0:
-                bdir = int(dir2[int(river_summary[indr, 3]), int(river_summary[indr, 4])])
-                bottom0 = dem[int(river_summary[indr, 3]) + kd[bdir-1, 0], int(river_summary[indr, 4]) + kd[bdir-1, 1]]
+                bdir = int(
+                    dir2[
+                        int(river_summary[indr, 3]),
+                        int(river_summary[indr, 4]),
+                    ]
+                )
+                bottom0 = dem[
+                    int(river_summary[indr, 3]) + int(kd[bdir - 1, 0]),
+                    int(river_summary[indr, 4]) + int(kd[bdir - 1, 1]),
+                ]
             else:
-                bottom0 = dem[int(river_summary[indr, 3]), int(river_summary[indr, 4])]
-            
-            # Use this delta from the original dem to adjust the top elevation
-            delta = max((top0 - bottom0) / length, river_epsilon)
-            top = bottom + delta * length
-            dem2[int(river_summary[indr, 1]), int(river_summary[indr, 2])] = top
-            
+                bottom0 = dem[
+                    int(river_summary[indr, 3]),
+                    int(river_summary[indr, 4]),
+                ]
+            # R: delta=max((top0-bottom0)/(length),river.epsilon)
+            delta = max((top0 - bottom0) / seg_length, river_epsilon)
+            # R: top=bottom+delta*length
+            top = bottom + delta * seg_length
+            # R: dem2[river.summary[indr,2], river.summary[indr,3]]=top
+            dem2[
+                int(river_summary[indr, 1]),
+                int(river_summary[indr, 2]),
+            ] = top
             if printflag:
-                print(f"River top elevation < river bottom elevation for segment {r}")
-                print(f"Original top {top0:.2f} and original bottom {bottom0:.2f}")
-                print(f"Adjusting the top elevation from {top0:.2f} to {top:.2f}")
-        
+                print(
+                    f"River top elevation<river bottom elevation for segment {r}"
+                )
+                print(
+                    f"Original top {round(top0, 2)} and original bottom {round(bottom0, 2)}"
+                )
+                print(
+                    f"Adjusting the top elevation from {round(top0, 2)} to {round(top, 2)}"
+                )
+
         if printflag:
             print(f"River segment: {r}")
-            print(f"Start: {river_summary[indr, 1]} {river_summary[indr, 2]} {top:.1f}")
-            print(f"End: {river_summary[indr, 3]} {river_summary[indr, 4]} {bottom:.1f}")
-        
-        # Walk from top to bottom smoothing out the river cells
+            print(
+                f"Start: {river_summary[indr, 1]} {river_summary[indr, 2]} {round(top, 1)}"
+            )
+            print(
+                f"End: {river_summary[indr, 3]} {river_summary[indr, 4]} {round(bottom, 1)}"
+            )
+
+        # walk from top to bottom smoothing out the river cells
+        # R: indx=river.summary[indr,2]  indy=river.summary[indr,3]
         indx = int(river_summary[indr, 1])
         indy = int(river_summary[indr, 2])
+        # R: marked.matrix[indx,indy]=marked.matrix[indx,indy]+1
         marked_matrix[indx, indy] = marked_matrix[indx, indy] + 1
-        
-        if length > 1:
-            delta = (top - bottom) / length
+
+        # R: if(length>1){delta=(top-bottom)/(length)}else{delta=0}
+        if seg_length > 1:
+            delta = (top - bottom) / seg_length
         else:
-            delta = 0
-        
+            delta = 0.0
+        # R: if(delta<0){ print(...); delta=0 }
         if delta < 0:
-            print(f"Warning: Calculated delta < 0, setting delta to 0 for segment {r}")
-            delta = 0
-        
+            print(
+                f"Warning: Calculated delta < 0, setting delta to 0 for segment {r}"
+            )
+            delta = 0.0
+        # R: temp=top
         temp = top
+        # R: riversmooth.summary[indr,7]=top  [8]=bottom  [9]=delta
         riversmooth_summary[indr, 6] = top
         riversmooth_summary[indr, 7] = bottom
         riversmooth_summary[indr, 8] = delta
-        
-        if length > 1:
-            for i in range(2, length + 1):
+
+        # R: if(length>1){
+        if seg_length > 1:
+            # R: for(i in 2:length){
+            for i in range(1, seg_length):
+                # R: temp=temp-delta
                 temp = temp - delta
-                # Find the downstream point and adjust its elevation
+                # R: dirtemp=dir2[indx,indy]
                 dirtemp = int(dir2[indx, indy])
-                downindx = indx + kd[dirtemp-1, 0]
-                downindy = indy + kd[dirtemp-1, 1]
-                
+                # R: downindx=indx+kd[dirtemp,1]  downindy=indy+kd[dirtemp,2]
+                downindx = indx + int(kd[dirtemp - 1, 0])
+                downindy = indy + int(kd[dirtemp - 1, 1])
+                # R: if(river.segments[downindx,downindy]==r){
                 if river_segments[downindx, downindy] == r:
+                    # R: dem2[downindx,downindy]=temp
                     dem2[downindx, downindy] = temp
-                    marked_matrix[downindx, downindy] = marked_matrix[downindx, downindy] + 1
-                    
-                    # Loop up the hillslope from the point and make sure everything drains
-                    drainfix = fix_drainage(
-                        dem=dem2, 
-                        direction=dir2, 
-                        mask=hillmask, 
-                        bank_epsilon=bank_epsilon, 
-                        startpoint=[downindx, downindy]
+                    # R: marked.matrix[downindx,downindy]=...
+                    marked_matrix[downindx, downindy] = (
+                        marked_matrix[downindx, downindy] + 1
                     )
-                    dem2 = drainfix['dem.adj']
+                    # R: drainfix=FixDrainage(dem=dem2, direction=dir2, mask=hillmask, bank.epsilon=bank.epsilon, startpoint=c(downindx,downindy))
+                    # R: dem2=drainfix$dem.adj
+                    drainfix = fix_drainage(
+                        dem=dem2,
+                        direction=dir2,
+                        mask=hillmask,
+                        bank_epsilon=bank_epsilon,
+                        startpoint=(downindx, downindy),
+                        d4=d4,
+                    )
+                    dem2 = drainfix["dem.adj"]
                 else:
                     print(f"Warning: Check Segment for branches {r}")
-                
-                # Move to the downstream point
+                # R: indx=downindx  indy=downindy
                 indx = downindx
                 indy = downindy
-        
-        # Mark this segment as done
+
+        # R: marked.segments[indr]= marked.segments[indr]+1
         marked_segments[indr] = marked_segments[indr] + 1
-        
+
         # Find all of the river segments that drain to this segment
+        # R: uplist=which(river.summary[,6]==r)
         uplist = np.where(river_summary[:, 5] == r)[0]
-        
-        # If there are upstream segments then add to the top of the Q overwriting the segment that
-        # was just done if not just remove the current segment from the queue
-        if len(uplist) > 0:
+        # R: if(length(uplist>0)){queue=c(uplist,queue[-1])} else{queue=queue[-1]}
+        # (R has typo length(uplist>0) should be length(uplist)>0)
+        if uplist.size > 0:
             queue = np.concatenate([uplist, queue[1:]])
         else:
             queue = queue[1:]
-        
-        if len(queue) == 0:
+        # R: if(length(queue)==0){active=F}
+        if queue.size == 0:
             active = False
-    
+
+    # R: output_list=list("dem.adj"=dem2, "processed"=marked.matrix, "summary"=riversmooth.summary)
     output_list = {
         "dem.adj": dem2,
         "processed": marked_matrix,
-        "summary": riversmooth_summary
+        "summary": riversmooth_summary,
     }
-    
-    return output_list 
+    return output_list
