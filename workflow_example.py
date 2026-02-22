@@ -258,21 +258,21 @@ segment = 29  # Pick a stream segment (0-indexed, change to see different segmen
 start = np.array([[subbasin["summary"][segment, 1], subbasin["summary"][segment, 2]]])
 
 streamline_old = path_extract(
-    trav_hs["dem"],
-    trav_hs["direction"],
-    mask=watershed_mask,
+    trav_hs["dem"].copy(),
+    trav_hs["direction"].copy(),
+    mask=watershed_mask.copy(),
     startpoint=start,
 )
 streamline_new = path_extract(
-    riv_smooth_result["dem.adj"],
-    trav_hs["direction"],
-    mask=watershed_mask,
+    riv_smooth_result["dem.adj"].copy(),
+    trav_hs["direction"].copy(),
+    mask=watershed_mask.copy(),
     startpoint=start,
 )
 streamline_riv = path_extract(
-    subbasin["segments"],
-    trav_hs["direction"],
-    mask=watershed_mask,
+    subbasin["segments"].copy(),
+    trav_hs["direction"].copy(),
+    mask=watershed_mask.copy(),
     startpoint=start,
 )
 
