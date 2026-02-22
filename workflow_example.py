@@ -302,11 +302,11 @@ slopes_calc = slope_calc_standard(
 # 3.2: Adjust slopes along river cells
 river_mask_slope = np.where(subbasin["segments"] > 0, 1, 0)
 slopes_calc2 = riv_slope(
-    direction=trav_hs["direction"],
-    slopex=slopes_calc["slopex"],
-    slopey=slopes_calc["slopey"],
+    direction=trav_hs["direction"].copy(),
+    slopex=slopes_calc["slopex"].copy(),
+    slopey=slopes_calc["slopey"].copy(),
     minslope=1e-4,
-    river_mask=river_mask_slope,
+    river_mask=watershed_mask.copy(),
     remove_sec=True,
 )
 
