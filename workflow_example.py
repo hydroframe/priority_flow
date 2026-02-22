@@ -289,9 +289,9 @@ transect_riv = streamline_riv["data"]
 
 # 3.1: Calculate slopes for the entire domain
 slopes_calc = slope_calc_standard(
-    dem=riv_smooth_result["dem.adj"],
-    direction=trav_hs["direction"],
-    mask=watershed_mask,
+    dem=riv_smooth_result["dem.adj"].copy(),
+    direction=trav_hs["direction"].copy(),
+    mask=watershed_mask.copy(),
     minslope=1e-5,
     maxslope=1,
     dx=1000,
