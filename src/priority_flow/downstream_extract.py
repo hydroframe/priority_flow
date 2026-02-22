@@ -1,90 +1,51 @@
 """
-Downstream Extract functions for PriorityFlow.
+Walk downstream from a point and extract values from a matrix.
 
-This module provides functions to walk downstream from a point and extract values
-from a matrix, creating a path mask and ordered list of cells along the flow path.
+Line-by-line translation of Downstream_Extract.R (PathExtract) from the R
+PriorityFlow package. R uses 1-based indexing; we use 0-based. startpoint
+is (row, col) 0-based for array indexing.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
+
+####################################################################
+# PriorityFlow - Topographic Processing Toolkit for Hydrologic Models
+# Copyright (C) 2018  Laura Condon (lecondon@email.arizona.edu)
+# Contributors - Reed Maxwell (rmaxwell@mines.edu)
+####################################################################
 
 
 def path_extract(
-    input_matrix: np.ndarray,
+    input: np.ndarray,
     direction: np.ndarray,
     mask: Optional[np.ndarray] = None,
-    startpoint: Union[List[int], Tuple[int, int], np.ndarray] = None,
-    d4: Tuple[int, int, int, int] = (1, 2, 3, 4)
+    startpoint: Optional[Union[Tuple[int, int], list, np.ndarray]] = None,
+    d4: Tuple[int, int, int, int] = (1, 2, 3, 4),
 ) -> Dict[str, np.ndarray]:
-    """
-    Walk downstream from a point and extract values from a matrix.
-    
-    This function grabs out values from a matrix by walking downstream from a point,
-    following the flow direction until reaching the domain boundary or masked area.
-    
-    Parameters
-    ----------
-    input_matrix : np.ndarray
-        The matrix of values that you would like to extract the stream path from
-    direction : np.ndarray
-        Flow direction matrix
-    mask : np.ndarray, optional
-        Processing mask. Defaults to processing everything
-    startpoint : Union[List[int], Tuple[int, int], np.ndarray]
-        The x,y index of the grid cell you would like to start from
-    d4 : Tuple[int, int, int, int], optional
-        Directional numbering system: down, left, top, right. Defaults to (1, 2, 3, 4)
-    
-    Returns
-    -------
-    Dict[str, np.ndarray]
-        A dictionary containing:
-        - 'data': Numpy array of values extracted along the downstream path
-        - 'path_mask': Matrix mapping the path with step numbers
-        - 'path_list': Numpy array of cells on the path in order
-    
-    Notes
-    -----
-    This function implements a downstream walking algorithm that:
-    1. Starts from a specified grid cell
-    2. Follows flow directions downstream
-    3. Extracts values from the input matrix along the path
-    4. Creates a path mask and ordered cell list
-    5. Stops when reaching domain boundary or masked area
-    
-    The algorithm handles different D4 numbering schemes by internally renumbering
-    to a standard system (1=down, 2=left, 3=up, 4=right).
-    """
-    nx, ny = direction.shape
-    
+    # R: nx=dim(direction)[1]  ny=dim(direction)[2]
+    nx = direction.shape[0]
+    ny = direction.shape[1]
+
+    # R: if(missing(mask)){mask=matrix(1, nrow=nx, ncol=ny)}
     if mask is None:
-        mask = np.ones((nx, ny))  # Default to processing everything
-    
-    if startpoint is None:
-        raise ValueError("startpoint must be provided")
-    
-    # Convert startpoint to proper format
-    if isinstance(startpoint, (list, tuple)):
-        startpoint = np.array(startpoint)
-    if startpoint.ndim == 1:
-        startpoint = startpoint.reshape(1, -1)
-    
-    # Initialize path tracking
-    path_mask = np.zeros((nx, ny))  # Matrix mapping the path
-    path = []  # List of cells on the path in order
-    
-    # D4 neighbors
-    # Rows: down, left, top, right
-    # Columns: (1) deltax, (2) deltay, direction number if you are walking downstream
-    kd = np.array([
-        [0, -1, 1],    # Down
-        [-1, 0, 2],    # Left
-        [0, 1, 3],     # Top
-        [1, 0, 4]      # Right
-    ])
-    
-    # Renumber the directions to 1=down, 2=left, 3=up, 4=right if a different numbering scheme was used
+        mask = np.ones((nx, ny))
+
+    # R: path.mask=matrix(0, nrow=nx, ncol=ny)
+    path_mask = np.zeros((nx, ny))
+    # R: path=NULL  (list of cells on the path in order)
+    path = []
+
+    # D4 neighbors - Rows: down, left top right. Columns (1)deltax, (2)deltay
+    # R: kd=matrix(0, nrow=4, ncol=4)  kd[,1]=c(0,-1,0,1)  kd[,2]=c(-1,0,1,0)
+    kd = np.zeros((4, 2))
+    kd[:, 0] = [0, -1, 0, 1]
+    kd[:, 1] = [-1, 0, 1, 0]
+
+    # renumber the directions to 1=down, 2=left, 3=up, 4=right if a different numbering scheme was used
+    # R: dir2=direction
     dir2 = direction.copy()
+    # R: if(d4[1]!=1){dir2[which(direction==d4[1])]=1}  etc.
     if d4[0] != 1:
         dir2[direction == d4[0]] = 1
     if d4[1] != 2:
@@ -93,47 +54,61 @@ def path_extract(
         dir2[direction == d4[2]] = 3
     if d4[3] != 4:
         dir2[direction == d4[3]] = 4
-    
-    # Initialize tracking variables
-    indx = int(startpoint[0, 0])
-    indy = int(startpoint[0, 1])
+
+    # initializing things
+    # R: indx=startpoint[1]  indy=startpoint[2]  (R 1-based row, col)
+    startpoint = np.asarray(startpoint)
+    if startpoint.ndim >= 2:
+        indx = int(startpoint.flat[0])
+        indy = int(startpoint.flat[1])
+    else:
+        indx = int(startpoint[0])
+        indy = int(startpoint[1])
+    # R: step=1
     step = 1
+    # R: active=T
     active = True
+    # R: output=NULL
     output = []
-    
-    # Walking downstream
+
+    # walking downstream
+    # R: while(active==T){
     while active:
-        # Extract value from current cell
-        output.append(input_matrix[indx, indy])
+        # R: output=c(output,input[indx,indy])
+        output.append(input[indx, indy])
+        # R: path.mask[indx,indy]=step
         path_mask[indx, indy] = step
+        # R: path=rbind(path, c(indx,indy))
         path.append([indx, indy])
-        
-        # Look downstream
+
+        # look downstream
+        # R: dirtemp=dir2[indx,indy]
         dirtemp = int(dir2[indx, indy])
-        downindx = indx + kd[dirtemp - 1, 0] 
-        downindy = indy + kd[dirtemp - 1, 1]
-        
-        # Check if we have made it out of the domain
-        if (downindx < 0 or downindx >= nx or downindy < 0 or downindy >= ny):
+        # R: downindx=indx+kd[dirtemp,1]  downindy=indy+kd[dirtemp,2]
+        # R uses 1-based direction (1..4); kd rows are 1..4 so in Python kd[dirtemp-1, :]
+        downindx = indx + int(kd[dirtemp - 1, 0])
+        downindy = indy + int(kd[dirtemp - 1, 1])
+
+        # If you have made it out of the domain then stop
+        # R: if(downindx<1 | downindx>nx | downindy<1 | downindy>ny){ active=F }
+        # R 1-based: valid 1..nx, 1..ny. Python 0-based: valid 0..nx-1, 0..ny-1
+        if downindx < 0 or downindx >= nx or downindy < 0 or downindy >= ny:
             active = False
         else:
-            # Check if the downstream cell is masked
+            # R: if(mask[downindx,downindy]==0){ active=F }
             if mask[downindx, downindy] == 0:
                 active = False
-        
-        # Update the new indices
+
+        # R: indx=downindx  indy=downindy  step=step+1
         indx = downindx
         indy = downindy
-        step += 1
-    
-    # Convert output and path to numpy arrays for consistency
-    output_array = np.array(output) if output else np.empty(0)
-    path_array = np.array(path) if path else np.empty((0, 2))
-    
+        step = step + 1
+
+    # R: output_list=list("data"=output, "path.mask"=path.mask, "path.list"=path)
+    path_list = np.array(path, dtype=np.int64) if path else np.zeros((0, 2), dtype=np.int64)
     output_list = {
-        "data": output_array,
+        "data": np.array(output, dtype=input.dtype),
         "path_mask": path_mask,
-        "path_list": path_array
+        "path_list": path_list,
     }
-    
-    return output_list 
+    return output_list
