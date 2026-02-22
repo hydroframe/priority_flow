@@ -254,7 +254,7 @@ def _plot_step2():
 
 
 # PathExtract example: walk downstream from a stream segment start
-segment = 30  # Pick a stream segment (0-indexed, change to see different segment)
+segment = 29  # Pick a stream segment (0-indexed, change to see different segment)
 start = np.array([[subbasin["summary"][segment, 1], subbasin["summary"][segment, 2]]])
 
 streamline_old = path_extract(
