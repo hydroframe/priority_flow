@@ -131,16 +131,16 @@ def main() -> None:
 
     # Upwind slopes with river-specific method
     slopes_uw = slope_calc_upwind(
-        dem=trav_hs["dem"],
-        direction=trav_hs["direction"],
+        dem=trav_hs["dem"].copy(),
+        direction=trav_hs["direction"].copy(),
         dx=dx,
         dy=dy,
         minslope=minslope,
         maxslope=maxslope,
         secondary_th=scale,
         river_method=riv_method,
-        rivermask=subbasin["RiverMask"],
-        subbasins=subbasin["subbasins"],
+        rivermask=subbasin["RiverMask"].copy(),
+        subbasins=subbasin["subbasins"].copy(),
     )
 
     print("Option 2 slopes (river-specific) computed.")
@@ -150,14 +150,15 @@ def main() -> None:
     # -------------------------------------------------------------------------
     # Create a river mask based on riv_th, possibly different from sub_th
     rivers = np.zeros_like(area)
+    rivers[area < riv_th] = 0
     rivers[area >= riv_th] = 1
 
     # Optional: could plot/inspect here as in the R script
 
     # Upwind slopes using alternate river mask but same subbasins
     slopes_uw = slope_calc_upwind(
-        dem=trav_hs["dem"],
-        direction=trav_hs["direction"],
+        dem=trav_hs["dem"].copy(),
+        direction=trav_hs["direction"].copy(),
         dx=dx,
         dy=dy,
         minslope=minslope,
@@ -165,7 +166,7 @@ def main() -> None:
         secondary_th=scale,
         river_method=riv_method,
         rivermask=rivers,
-        subbasins=subbasin["subbasins"],
+        subbasins=subbasin["subbasins"].copy(),
     )
 
     print("Option 2b slopes (alternate river mask) computed.")
