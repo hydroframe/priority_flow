@@ -214,6 +214,29 @@ stream_order = calc_stream_order(
     subbasin["segments"].copy(),
 )
 
+
+def _plot_stream_network(
+    subbasin: dict,
+    stream_order: dict,
+) -> None:
+    """Plot stream segments, stream order, and subbasins (like R par(mfrow=c(1,3)))."""
+    fig, axes = plt.subplots(1, 3, figsize=(14, 5))
+    im0 = axes[0].imshow(subbasin["segments"], cmap="nipy_spectral")
+    axes[0].set_title("Stream Segments")
+    plt.colorbar(im0, ax=axes[0], label="Segment ID")
+    im1 = axes[1].imshow(stream_order["order_mask"], cmap="viridis")
+    axes[1].set_title("Stream Order")
+    plt.colorbar(im1, ax=axes[1], label="Strahler order")
+    im2 = axes[2].imshow(subbasin["subbasins"], cmap="nipy_spectral")
+    axes[2].set_title("Subbasins")
+    plt.colorbar(im2, ax=axes[2], label="Subbasin ID")
+    plt.tight_layout()
+    plt.savefig("workflow_stream_network.png", dpi=150)
+    plt.close()
+
+
+_plot_stream_network(subbasin, stream_order)
+
 # Step 2.3: Smooth the DEM along river segments
 riv_smooth_result = river_smooth(
     dem=trav_hs["dem"],
@@ -281,6 +304,68 @@ transect_new = streamline_new["data"]
 transect_riv = streamline_riv["data"]
 
 
+def _plot_path_transect(
+    transect_old: np.ndarray,
+    transect_new: np.ndarray,
+    transect_riv: np.ndarray,
+    subbasin: dict,
+    streamline_riv: dict,
+    segment: int,
+) -> None:
+    """
+    Plot elevation transects and path map along a selected stream segment
+    (Python analogue of the R PathExtract plotting block).
+    """
+    nstep = len(transect_riv)
+    x = np.arange(1, nstep + 1)
+
+    # Find breaks between stream segments along the path
+    if nstep > 1:
+        tr = np.asarray(transect_riv).ravel()
+        diff_mask = tr[1:] != tr[:-1]
+        slist = np.where(diff_mask)[0] + 1.5  # between steps k and k+1
+    else:
+        slist = []
+
+    # Elevation limits across old/new transects
+    all_vals = np.concatenate(
+        [np.asarray(transect_old).ravel(), np.asarray(transect_new).ravel()]
+    )
+    vmin = np.nanmin(all_vals)
+    vmax = np.nanmax(all_vals)
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+    # Left: elevation transects
+    ax0 = axes[0]
+    ax0.plot(x, transect_old, color="C0", lw=2, label="Old Elevations")
+    ax0.plot(x, transect_new, color="C2", lw=2, label="New Elevations")
+    ax0.set_xlim(1, max(1, nstep))
+    ax0.set_ylim(vmin, vmax)
+    for s in slist:
+        ax0.axvline(s, color="k", linestyle="--", linewidth=1)
+    ax0.set_xlabel("Step")
+    ax0.set_ylabel("Elevation")
+    ax0.legend(loc="lower left", frameon=False)
+
+    # Right: path map over stream network
+    ax1 = axes[1]
+    segment_plot = np.where(subbasin["segments"] > 0, 1, 0)
+    ax1.imshow(segment_plot, cmap="gray_r", vmin=0, vmax=1)
+    ax1.set_title(f"Path Map (segment {segment + 1})")
+
+    path_mask = streamline_riv["path_mask"]
+    path_overlay = np.where(path_mask == 0, np.nan, path_mask)
+    ax1.imshow(path_overlay, cmap="Reds", alpha=0.8)
+
+    plt.tight_layout()
+    plt.savefig("workflow_path_transect.png", dpi=150)
+    plt.close()
+
+
+_plot_path_transect(transect_old, transect_new, transect_riv, subbasin, streamline_riv, segment)
+
+
 # =============================================================================
 # Step 3: Calculate the slopes
 # =============================================================================
@@ -312,6 +397,31 @@ slopes_calc2 = riv_slope(
 
 slopex = slopes_calc2["slopex"]
 slopey = slopes_calc2["slopey"]
+
+
+def _plot_slopes(slopex: np.ndarray, slopey: np.ndarray) -> None:
+    """
+    Plot resulting slopes in x and y directions (R analogue: image.plot of sxplot, syplot).
+    """
+    sxplot = np.where(slopex == 0, np.nan, slopex)
+    syplot = np.where(slopey == 0, np.nan, slopey)
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+    im0 = axes[0].imshow(sxplot, cmap="RdBu")
+    axes[0].set_title("SlopeX (primary & secondary)")
+    plt.colorbar(im0, ax=axes[0])
+
+    im1 = axes[1].imshow(syplot, cmap="RdBu")
+    axes[1].set_title("SlopeY (primary & secondary)")
+    plt.colorbar(im1, ax=axes[1])
+
+    plt.tight_layout()
+    plt.savefig("workflow_slopes.png", dpi=150)
+    plt.close()
+
+
+_plot_slopes(slopex, slopey)
 
 
 # =============================================================================
@@ -359,8 +469,13 @@ if __name__ == "__main__":
 
     try:
         _plot_inputs()
-        _plot_step1()
+        _plot_step1(trav_hs, dem_diff, targets)
+        _plot_drainage_area(area)
+        _plot_stream_network(subbasin, stream_order)
         _plot_step2()
-        print("\nPlots saved: workflow_inputs.png, workflow_step1.png, workflow_step2_smoothing.png")
+        print(
+            "\nPlots saved: workflow_inputs.png, workflow_step1.png, "
+            "workflow_drainage_area.png, workflow_stream_network.png, workflow_step2_smoothing.png"
+        )
     except Exception as e:
         print(f"\nSkipping plots: {e}")
