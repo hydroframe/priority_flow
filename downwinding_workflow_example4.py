@@ -196,8 +196,7 @@ def main() -> None:
 
     # Option 2: Handle river cells differently using subbasins
     area = drainage_area(
-        trav_hs["direction"],
-        mask=watershed_mask,
+        trav_hs["direction"].copy(),
         printflag=False,
     )
 
