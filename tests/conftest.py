@@ -6,7 +6,8 @@ from pathlib import Path
 import pytest
 
 
-BASE_OUTPUT_ROOT = Path(__file__).parent / "correct_output"
+CORRECT_OUTPUT_DIR = Path(__file__).parent / "correct_output"
+TEST_OUTPUT_DIR = Path(__file__).parent
 
 
 @pytest.fixture
@@ -18,7 +19,7 @@ def test_output_dir(request) -> Path:
     ``tests/correct_output/test_name``.
     """
     test_name = request.node.name
-    output_dir = BASE_OUTPUT_ROOT / test_name
+    output_dir = TEST_OUTPUT_DIR / test_name
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
