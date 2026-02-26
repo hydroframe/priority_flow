@@ -25,20 +25,23 @@ def test_example_workflow_option_3():
     nx, ny = DEM.shape
 
     init = init_queue(DEM, domainmask=watershed_mask, initmask=river_mask)
-    for key in init.keys():
-        if key == "direction":
-            continue
+    for key in ['mask', 'marked', 'basins']:
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"init_{key}.txt")
         R_data = np.loadtxt(R_file)
         python_data = init[key]
-        assert np.array_equal(python_data, R_data)
-
+        assert np.array_equal(python_data, R_data), f"init_{key}.txt is not equal to the correct output"
+    R_file = os.path.join(CORRECT_OUTPUT_DIR, "init_queue.txt")
+    R_data = np.loadtxt(R_file)
+    for row in R_data:
+        row[0] -= 1
+        row[1] -= 1
+    python_data = init['queue']
+    assert np.array_equal(python_data, R_data), "init_queue.txt is not equal to the correct output"
     with open(os.path.join(CORRECT_OUTPUT_DIR, "init_direction.txt")) as f:
         content = f.read().replace("NA", "nan")
-
-    r_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
     python_data = init["direction"]
-    assert np.array_equal(python_data, r_data, equal_nan=True)
+    assert np.array_equal(python_data, R_data, equal_nan=True), "init_direction.txt is not equal to the correct output"
 
     trav_hs = d4_traverse_b(
         DEM,
