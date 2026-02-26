@@ -1,6 +1,13 @@
+# Note: This test throws an error at the streamorder step:
+# IndexError: index 0 is out of bounds for axis 0 with size 0
+# The R workflow throws the same error.
+
 import os
 import numpy as np
 from conftest import CORRECT_OUTPUT_DIR
+
+CORRECT_OUTPUT_DIR = CORRECT_OUTPUT_DIR / "test_example_workflow_option_1"
+
 from priority_flow import (
     init_queue,
     d4_traverse_b,
@@ -16,8 +23,7 @@ from priority_flow import (
     riv_slope,
 )
 
-
-def test_example_workflow_option_3():
+def test_example_workflow_option_1():
     DEM = load_dem()
     watershed_mask = load_watershed_mask()
     river_mask = load_river_mask()
