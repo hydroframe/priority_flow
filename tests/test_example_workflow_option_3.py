@@ -1,6 +1,9 @@
 import os
 import numpy as np
 from conftest import CORRECT_OUTPUT_DIR
+
+CORRECT_OUTPUT_DIR = CORRECT_OUTPUT_DIR / "test_example_workflow_option_3"
+
 from priority_flow import (
     init_queue,
     d4_traverse_b,
