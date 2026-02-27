@@ -29,7 +29,7 @@ autoapi_options = ['members',
                    'show-module-summary', 
                    'imported-members', 
                   ]
-autoapi_add_toctree_entry = False
+autoapi_add_toctree_entry = True
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

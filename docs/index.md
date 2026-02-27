@@ -9,5 +9,4 @@ example.ipynb
 changelog.md
 contributing.md
 conduct.md
-autoapi/priority_flow/index
 ```
