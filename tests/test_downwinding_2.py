@@ -145,3 +145,64 @@ def test_downwinding_2():
     python_data = subbasin['summary']
     assert np.array_equal(python_data, R_data)
     
+    slopes_uw = slope_calc_upwind(
+        dem=trav_hs["dem"].copy(),
+        direction=trav_hs["direction"].copy(),
+        dx=dx,
+        dy=dy,
+        mask=watershed_mask.copy(),
+        minslope=minslope,
+        maxslope=maxslope,
+        secondary_th=scale,
+        river_method=riv_method,
+        rivermask=subbasin["RiverMask"].copy(),
+        subbasins=subbasin["subbasins"].copy(),
+    )
+    for key in slopes_uw.keys():
+        if key == 'direction':
+            continue
+        R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_2_slopesUW_option2_{key}.txt'
+        R_data = np.loadtxt(R_file)
+        python_data = slopes_uw[key]
+        assert np.allclose(python_data, R_data)
+    with open(os.path.join(CORRECT_OUTPUT_DIR, "downwinding_2_slopesUW_option2_direction.txt")) as f:
+        content = f.read().replace("NA", "nan")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    python_data = slopes_uw['direction']
+    assert np.array_equal(python_data, R_data, equal_nan=True)
+    
+    # Option 2b
+    rivers = np.zeros_like(area)
+    rivers[area < riv_th] = 0
+    rivers[area >= riv_th] = 1
+    slopes_uw = slope_calc_upwind(
+        dem=trav_hs["dem"].copy(),
+        direction=trav_hs["direction"].copy(),
+        dx=dx,
+        dy=dy,
+        mask=watershed_mask.copy(),
+        minslope=minslope,
+        maxslope=maxslope,
+        secondary_th=scale,
+        river_method=riv_method,
+        rivermask=rivers,
+        subbasins=subbasin["subbasins"].copy(),
+    )
+    for key in slopes_uw.keys():
+        if key == 'direction':
+            continue
+        R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_2_slopesUW_option2b_{key}.txt'
+        R_data = np.loadtxt(R_file)
+        python_data = slopes_uw[key]
+        assert np.allclose(python_data, R_data)
+    with open(os.path.join(CORRECT_OUTPUT_DIR, "downwinding_2_slopesUW_option2b_direction.txt")) as f:
+        content = f.read().replace("NA", "nan")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    python_data = slopes_uw['direction']
+    assert np.array_equal(python_data, R_data, equal_nan=True)
+
+    area = drainage_area(trav_hs["direction"], mask=watershed_mask, printflag=False)
+    R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_2_area_from_travHS_direction_mask.txt'
+    R_data = np.loadtxt(R_file)
+    python_data = area
+    assert np.array_equal(python_data, R_data)
