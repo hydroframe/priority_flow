@@ -95,6 +95,11 @@ def test_downwinding_4():
     R_data = np.loadtxt(R_file)
     python_data = trav1['dem']
     assert np.allclose(python_data, R_data)
+    with open(f'{CORRECT_OUTPUT_DIR}/downwinding_4_trav1_direction.txt') as f:
+        content = f.read().replace("NA", "nan")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    python_data = trav1['direction']
+    assert np.array_equal(python_data, R_data, equal_nan=True)
 
     first_pass_pct = (
         np.sum(trav1["marked"] * river_mask) / np.sum(river_mask) * 100.0
