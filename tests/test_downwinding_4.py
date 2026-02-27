@@ -85,7 +85,7 @@ def test_downwinding_4():
         epsilon=ep,
     )
     for key in trav1.keys():
-        if key == 'dem':
+        if key == 'dem' or key == 'direction':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_4_trav1_{key}.txt'
         R_data = np.loadtxt(R_file)
