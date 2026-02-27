@@ -7,8 +7,7 @@
 
 getting_started.md
 faq.md
-examples/index.md
-example_notebooks/example_notebooks.md
+notebooks/notebooks.md
 API_Reference.rst
 changelog.md
 contributing.md
