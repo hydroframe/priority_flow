@@ -17,7 +17,7 @@ from priority_flow import (
 )
 
 
-def test_downwinding_1():
+def test_downwinding_2():
     ep = 0.01  # epsilon for D4TraverseB (PriorityFlow processing)
 
     # Slope scaling
