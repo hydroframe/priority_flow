@@ -2,12 +2,16 @@
 ```
 
 ```{toctree}
-:maxdepth: 1
+:maxdepth: 2
 :hidden:
 
-example.ipynb
+getting_started.md
+faq.md
+examples/index.md
+example_notebooks/example_notebooks.md
+API_Reference.rst
 changelog.md
 contributing.md
 conduct.md
-autoapi/index
+data_use_policy.md
 ```
