@@ -22,6 +22,14 @@ extensions = [
     "sphinx.ext.viewcode",
 ]
 autoapi_dirs = ["../src"]
+autoapi_template_dir = './sphinx-autoapi-templates'
+autoapi_options = ['members',
+                   'undoc-members',
+                   'show-inheritance', 
+                   'show-module-summary', 
+                   'imported-members', 
+                  ]
+autoapi_add_toctree_entry = False
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -34,3 +42,4 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # a list of builtin themes.
 #
 html_theme = "sphinx_rtd_theme"
+nb_execution_mode = 'off'
