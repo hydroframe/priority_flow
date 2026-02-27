@@ -299,7 +299,10 @@ def calc_subbasins(
                                 queue2.append([xus, yus])
 
             # R: if(length(queue2)>=2){ queue=queue2; nqueue=nrow(queue); ii=ii+1 } else{nqueue=0}
-            if len(queue2) >= 2:
+            # In R, length(queue2) is rows * cols; a single-row (1x2) matrix has length 2.
+            # The condition length(queue2) >= 2 therefore means "at least one row".
+            # In Python, len(queue2) is the number of rows, so we must check >= 1.
+            if len(queue2) >= 1:
                 queue = np.array(queue2)
                 nqueue = queue.shape[0]
                 ii = ii + 1
