@@ -9,5 +9,5 @@ example.ipynb
 changelog.md
 contributing.md
 conduct.md
-autoapi/index
+autoapi/priority_flow/index
 ```
