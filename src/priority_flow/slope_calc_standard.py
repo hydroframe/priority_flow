@@ -27,6 +27,68 @@ def slope_calc_standard(
     secondary_th: float = -1,
     printflag: bool = False,
 ) -> Dict[str, np.ndarray]:
+    """
+    Calculate the slopes from a DEM.
+
+    This function will calculate slopes using standard or upwinding 
+    options and apply a range of smoothing options.
+
+    Parameters
+    ----------
+    dem : np.ndarray
+        2D array of elevations for the domain \((nx, ny)\).
+    direction : np.ndarray
+        2D array of D4 flow directions for each cell, using the
+        convention encoded in ``d4``.
+    dx, dy : float
+        Lateral grid cell resolutions in the x and y directions,
+        respectively.
+    mask : np.ndarray, optional
+        2D mask defining the domain extent to be considered. Cells with
+        value 0 are excluded from slope calculations. If ``None``, the
+        full rectangular domain of ``dem`` is used.
+    d4 : tuple of int, optional
+        Direction numbering system for the D4 neighbors, given as
+        ``(down, left, up, right)``. Defaults to ``(1, 2, 3, 4)`` to
+        match the original R implementation.
+    minslope : float, optional
+        Minimum absolute slope to enforce on primary-direction slopes.
+        If ``minslope >= 0``, primary slopes with magnitude less than
+        this value are adjusted up to ``minslope`` (with sign preserved).
+        Defaults to ``0``.
+    maxslope : float, optional
+        Maximum absolute slope to enforce. If ``maxslope >= 0``,
+        slopes with magnitude greater than this value are limited to
+        ``±maxslope``. If set to ``-1``, no maximum is applied.
+    secondary_th : float, optional
+        Secondary threshold - maximum ratio of |secondary|/|primary| to be enforced.
+        NOTE - this scaling occurs after any max threholds are applied. Currently this is only working for two options:
+        (1) If this is set to -1 no scaling will be applied, (2) If  this is set to zero all  seconeary slopes will be zero
+    printflag : bool, optional
+        If True, print progress information and details about slope
+        limiting and secondary-slope handling.
+
+    Notes on River Methods:
+    0: default value, no special treatment for river cells.
+    1: Scale secondary slopes along the river (Note this requries a river mask and you must set a river_secondaryTH if you want this to be something other than 0)
+    2: Apply watershed mean slope to each river reach (requires river mask and subbasins).
+    3: Apply the stream mean slope to each reach (requires river mask and subbasins).
+    NOTE: the river mask can be different from the rivers that were used to create the subbasins if desired (i.e. if you want to use a threshold of 100 to create subbasins but then apply to river cells with a threshold of 50).
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Dictionary containing:
+
+        - ``\"slopex\"``: 2D array of adjusted x-direction face-centered
+          slopes.
+        - ``\"slopey\"``: 2D array of adjusted y-direction face-centered
+          slopes.
+        - ``\"direction\"``: the (possibly renumbered) flow-direction
+          array used when constructing primary/secondary masks.
+        - ``\"Sinks\"``: 1D array of linear indices (flattened) marking
+          locations where slope signs were flipped to remove sinks.
+    """
     # R: ny=ncol(dem)  nx=nrow(dem)
     nx = dem.shape[0]
     ny = dem.shape[1]
