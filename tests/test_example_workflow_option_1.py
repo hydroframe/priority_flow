@@ -84,7 +84,6 @@ def test_example_workflow_option_1():
     subbasin = calc_subbasins(
         trav_hs["direction"].copy(),
         area=area.copy(),
-        mask=watershed_mask.copy(),
         riv_th=60,
         merge_th=0,
     )
