@@ -25,6 +25,55 @@ def calc_subbasins(
     printflag: bool = False,
     merge_th: int = 0,
 ) -> Dict[str, np.ndarray]:
+    """
+    Define subbasins and stream segments from flow direction and drainage area.
+
+    This function is a port of the R function ``CalcSubbasins`` from the
+    PriorityFlow package. It divides the domain into subbasins and individual
+    stream segments using a flow-direction grid and a drainage-area grid.
+
+    Parameters
+    ----------
+    direction : np.ndarray
+        2D array of D4 flow directions for each cell. Direction codes follow
+        the ``d4`` numbering scheme.
+    area : np.ndarray
+        2D array of drainage area values for every cell (typically in number of
+        contributing cells or an equivalent measure).
+    mask : np.ndarray, optional
+        2D mask with ones for cells to be processed and zeros for everything
+        else. If ``None``, a mask of all ones with the same shape as
+        ``direction`` is used.
+    d4 : tuple of int, optional
+        Direction numbering system for the D4 neighbors, given as
+        ``(down, left, up, right)``. Defaults to ``(1, 2, 3, 4)`` to match the
+        original R implementation.
+    riv_th : int, optional
+        Drainage-area threshold used to classify river cells. Cells with
+        ``area >= riv_th`` are treated as part of the river network. Defaults
+        to ``50``.
+    printflag : bool, optional
+        If ``True``, print basic progress information while growing subbasins
+        upstream from the river network.
+    merge_th : int, optional
+        After all subbasins have been defined, subbasins with total area
+        smaller than ``merge_th`` are merged into their downstream neighbors.
+        A value of ``0`` (the default) disables merging.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Dictionary containing:
+
+        - ``\"segments\"``: 2D array with a unique ID for each stream segment.
+        - ``\"subbasins\"``: 2D array with a unique ID for each subbasin
+          (segment plus its contributing area).
+        - ``\"RiverMask\"``: 2D mask of river cells derived from ``area`` and
+          ``riv_th``.
+        - ``\"summary\"``: 2D array where each row summarizes a subbasin/segment
+          (segment ID, representative coordinates, downstream segment ID and
+          cell count). Coordinates are stored using 0-based indexing.
+    """
     # R: nx=nrow(direction)
     # R: ny=ncol(direction)
     nx = direction.shape[0]

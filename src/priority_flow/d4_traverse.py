@@ -8,12 +8,6 @@ R uses 1-based indexing; we use 0-based. Queue has columns (row, col, elevation)
 import numpy as np
 from typing import Dict, Optional, Tuple
 
-####################################################################
-# PriorityFlow - Topographic Processing Toolkit for Hydrologic Models
-# Copyright (C) 2018  Laura Condon (lecondon@email.arizona.edu)
-# Contributors - Reed Maxwell (rmaxwell@mines.edu)
-####################################################################
-
 
 def d4_traverse_b(
     dem: np.ndarray,
@@ -32,8 +26,81 @@ def d4_traverse_b(
     n_chunk: Optional[int] = None,
 ) -> Dict[str, np.ndarray]:
     """
-    D4TraverseB: process all network cells walking upstream on D4 neighbors.
-    Optional n_chunk for API compatibility (overrides nchunk if given).
+    Priority flow processing of D4 stream networks.
+
+    This function is a direct port of the R function ``D4TraverseB`` from the
+    PriorityFlow package. It processes all stream-network cells by walking
+    upstream along D4 (cross-shaped) neighbors inside a mask. Where no D4
+    neighbors exist, it looks for D8 (diagonal) neighbors and effectively
+    creates D4 ``bridges`` to those diagonal cells by filling intervening
+    elevations.
+
+    Parameters
+    ----------
+    dem : np.ndarray
+        2D array of elevations for the domain \((nx, ny)\).
+    queue : np.ndarray
+        Initial priority queue with shape ``(n, 3)``. Each row is
+        ``(i, j, elevation)`` giving the row index, column index and
+        elevation of a starting cell. Indices are 0-based.
+    marked : np.ndarray
+        2D array of the same shape as ``dem`` indicating which cells
+        have already been marked (typically 1 for processed / queued
+        cells and 0 otherwise).
+    mask : np.ndarray, optional
+        2D mask with ones for cells to be processed and zeros for
+        everything else. If ``None``, a mask of all ones with the same
+        shape as ``dem`` is used.
+    step : np.ndarray, optional
+        2D array recording the step number at which each cell was
+        processed. If ``None``, initialized to all zeros.
+    direction : np.ndarray, optional
+        2D array of flow directions for processed cells. Direction codes
+        follow the ``d4`` numbering scheme. If ``None``, initialized to
+        ``np.nan`` everywhere.
+    basins : np.ndarray, optional
+        2D array of basin identifiers, typically created by an
+        initialization script. When provided, any new cell added to the
+        queue is assigned the same basin number as the cell that added
+        it. If ``None``, initialized to all zeros.
+    d4 : tuple of int, optional
+        Direction numbering system for the D4 neighbors, given as
+        ``(down, left, up, right)``. Defaults to ``(1, 2, 3, 4)`` to
+        match the original R implementation.
+    printstep : bool, optional
+        If ``True``, print the step number and current queue sizes while
+        traversing.
+    nchunk : int, optional
+        Queue-splitting parameter. The top ``nchunk`` values are kept in
+        the primary queue for initial processing; additional cells are
+        placed into a secondary queue and merged in chunks.
+    epsilon : float, optional
+        Small value added to filled areas to avoid creating flat regions
+        when raising elevations. Defaults to ``0.0``.
+    printflag : bool, optional
+        Optional flag preserved for API compatibility with the R
+        function. Currently not used in the Python implementation.
+    n_chunk : int, optional
+        Keyword alias for ``nchunk``. If provided, overrides ``nchunk``.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Dictionary containing:
+
+        - ``\"dem\"``: updated elevation array after filling.
+        - ``\"mask\"``: mask used during processing.
+        - ``\"marked\"``: updated marked array.
+        - ``\"step\"``: step number at which each cell was processed.
+        - ``\"direction\"``: flow direction codes for each cell.
+        - ``\"basins\"``: basin identifier assigned to each cell.
+
+    Notes
+    -----
+    All arrays are 2D with shape ``(nx, ny)`` and use 0-based indexing.
+    The traversal walks upstream, so direction codes point from each
+    cell toward its downstream neighbor following the chosen ``d4``
+    numbering.
     """
     if n_chunk is not None:
         nchunk = n_chunk

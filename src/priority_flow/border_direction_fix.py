@@ -20,6 +20,8 @@ def fix_border_dir(
     Originally all border cells are initialized to point out of the domain. 
     This function checks the slopes and areas to determine if they need to swap
     direction to point into the domain instead.
+
+    NOTE: This function is not yet tested.
     
     Parameters
     ----------

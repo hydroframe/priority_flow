@@ -23,6 +23,47 @@ def path_extract(
     startpoint: Optional[Union[Tuple[int, int], list, np.ndarray]] = None,
     d4: Tuple[int, int, int, int] = (1, 2, 3, 4),
 ) -> Dict[str, np.ndarray]:
+    """
+    Walk downstream from a starting point and extract values from a matrix.
+
+    This is a port of the R function ``PathExtract`` from the PriorityFlow
+    package. Starting from a given grid cell, it follows the D4 flow-direction
+    grid ``direction`` downstream, collecting values from ``input`` until the
+    path leaves the domain or exits the processing mask.
+
+    Parameters
+    ----------
+    input : np.ndarray
+        2D array of values from which to extract the stream-path sequence
+        (for example, elevation, drainage area, or any other field defined
+        on the same grid as ``direction``).
+    direction : np.ndarray
+        2D array of D4 flow directions for each cell. Direction codes follow
+        the ``d4`` numbering scheme.
+    mask : np.ndarray, optional
+        2D mask with ones for cells that are allowed to be part of the path
+        and zeros elsewhere. If ``None``, a mask of all ones with the same
+        shape as ``direction`` is used.
+    startpoint : tuple[int, int] or list or np.ndarray, optional
+        Starting grid cell given as ``(row, col)`` indices (0-based). If an
+        array-like object is provided, only the first two elements are used.
+    d4 : tuple of int, optional
+        Direction numbering system for the D4 neighbors, given as
+        ``(down, left, up, right)``. Defaults to ``(1, 2, 3, 4)`` to match the
+        original R implementation.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Dictionary containing:
+
+        - ``\"data\"``: 1D array of values extracted from ``input`` along the
+          downstream path, in order.
+        - ``\"path_mask\"``: 2D array with non-zero entries indicating the
+          step number at each cell visited along the path.
+        - ``\"path_list\"``: 2D array of ``(row, col)`` indices for the cells
+          visited along the path, in traversal order.
+    """
     # R: nx=dim(direction)[1]  ny=dim(direction)[2]
     nx = direction.shape[0]
     ny = direction.shape[1]

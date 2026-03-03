@@ -29,8 +29,12 @@ def calc_flow(
     
     This function will write three pfb outputs for every timestep:
     (1) outflow - volumetric outflow from each grid cell [l3/t]
-    (2) q_east - volumetric flow across the east face of each cell [nx+1, ny]
-    (3) q_north - volumetric flow across the north face of each cell [nx, ny+1]
+    (2) q_east - volumetric flow across the east face of each cell (Note: 
+         this will have dimensions nx+1, ny to account for the western 
+         edge of the domain)
+    (3) q_north - volumetric flow across the north face of each cell. (Note 
+        this will have dimensions nx, ny+1 to account for the southern 
+        edge of the domain)
     
     Parameters
     ----------

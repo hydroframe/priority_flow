@@ -17,6 +17,8 @@ def delin_watershed(
 ) -> Dict[str, np.ndarray]:
     """
     Function to define the watershed for a point or set of outlet points based on the flow direction file.
+
+    NOTE: This function is not yet tested.
     
     Parameters
     ----------
