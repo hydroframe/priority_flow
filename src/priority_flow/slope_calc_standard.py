@@ -68,11 +68,13 @@ def slope_calc_standard(
         If True, print progress information and details about slope
         limiting and secondary-slope handling.
 
-    Notes on River Methods:
-    0: default value, no special treatment for river cells.
-    1: Scale secondary slopes along the river (Note this requries a river mask and you must set a river_secondaryTH if you want this to be something other than 0)
-    2: Apply watershed mean slope to each river reach (requires river mask and subbasins).
-    3: Apply the stream mean slope to each reach (requires river mask and subbasins).
+    Notes on River Methods
+    ----------------------
+    - 0: default value, no special treatment for river cells.
+    - 1: Scale secondary slopes along the river (Note this requries a river mask and you must set a river_secondaryTH if you want this to be something other than 0)
+    - 2: Apply watershed mean slope to each river reach (requires river mask and subbasins).
+    - 3: Apply the stream mean slope to each reach (requires river mask and subbasins).
+    
     NOTE: the river mask can be different from the rivers that were used to create the subbasins if desired (i.e. if you want to use a threshold of 100 to create subbasins but then apply to river cells with a threshold of 50).
 
     Returns
