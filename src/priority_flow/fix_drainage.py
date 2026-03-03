@@ -23,6 +23,53 @@ def fix_drainage(
     startpoint: Union[Tuple[int, int], list, np.ndarray],
     d4: Tuple[int, int, int, int] = (1, 2, 3, 4),
 ) -> Dict[str, np.ndarray]:
+    """
+    Walk upstream from a point ensuring DEM is increasing by a minum epsilon.
+
+    This walks upstream from a point following a flow direction file and checks that the elevation upstream
+    is greater than or equal to the elvation at the point + epsilon
+    Once the function reaches a point where upstream cells pass it stops 
+    
+    NOTE: this is only processing the immediate neigborhood and does not recurse over the entire domain, 
+    For example if you did the entire overal prioirty flow processing with an espilon of 0 then ran this
+    functon starting at a river point with an epsilon of 0.1 this function will traverse upstream from the 
+    river bottom checking that every cell conneting to the river cell is higher by at least this ammout but 
+    once it reaches a point where every connected cell passes this test it will stop. Therefore there could
+    still be locations higher up on the hillslope with the original epsilon of zero still.  This  is on purpose
+    and this script is not intended to gobally ensure a given epsilon. 
+
+    Parameters
+    ----------
+    dem : np.ndarray
+        2D array of elevations for the domain \((nx, ny)\).
+    direction : np.ndarray
+        2D array of D4 flow directions for each cell. Direction codes
+        follow the ``d4`` numbering scheme.
+    mask : np.ndarray
+        2D mask with ones for cells that are allowed to be processed and
+        zeros elsewhere. Only neighbors within the mask can be adjusted.
+    bank_epsilon : float
+        Minimum elevation difference that upstream cells must have
+        relative to the current cell. If an upstream neighbor is lower
+        than ``current + bank_epsilon``, its elevation is raised to
+        ``current + bank_epsilon``.
+    startpoint : tuple[int, int] or list or np.ndarray
+        Starting grid cell given as ``(row, col)`` indices (0-based)
+        from which to begin walking upstream.
+    d4 : tuple of int, optional
+        Direction numbering system for the D4 neighbors, given as
+        ``(down, left, up, right)``. Defaults to ``(1, 2, 3, 4)`` to
+        match the original R implementation.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Dictionary containing:
+
+        - ``\"dem.adj\"``: 2D elevation array after local adjustments.
+        - ``\"processed\"``: 2D array marking cells that were adjusted
+          (1) or visited during processing, and 0 elsewhere.
+    """
     # D4 neighbors - Rows: down, left top right
     # Columns: (1)deltax, (2)deltay, direction number if you are walking upstream
     # R: ku=matrix(0, nrow=4, ncol=3)

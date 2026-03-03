@@ -19,8 +19,7 @@ def find_orphan(
     Find orphan branches in river network processing.
     
     Function to look for unprocessed river cells that have D8 neighbors on the
-    river network or on the boundary. This is useful for identifying missed cells
-    during river network processing and ensuring complete coverage.
+    river network or on the boundary.
     
     Parameters
     ----------

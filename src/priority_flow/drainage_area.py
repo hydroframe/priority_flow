@@ -17,8 +17,32 @@ def drainage_area(
     printflag: bool = False,
 ) -> np.ndarray:
     """
-    Calculate drainage area (number of cells draining to any cell) given a flow direction file.
-    Translation of drainageArea() from R PriorityFlow.
+    Calculate drainage area (number of upstream cells) for each grid cell given a flow direction file.
+
+    Parameters
+    ----------
+    direction : np.ndarray
+        2D array of D4 flow directions for each cell. Direction codes follow
+        the ``d4`` numbering scheme.
+    mask : np.ndarray, optional
+        2D mask with ones for cells to be processed and zeros for everything
+        else. Cells outside the mask are excluded from the drainage-area
+        computation. If ``None``, a mask of all ones with the same shape as
+        ``direction`` is used.
+    d4 : tuple of int, optional
+        Direction numbering system for the D4 neighbors, given as
+        ``(down, left, up, right)``. Defaults to ``(1, 2, 3, 4)`` to match the
+        original R implementation.
+    printflag : bool, optional
+        If ``True``, print basic progress information as the algorithm walks
+        downstream through the queue of cells.
+
+    Returns
+    -------
+    np.ndarray
+        2D array of drainage areas with the same shape as ``direction``. Each
+        entry gives the number of cells (including itself) that drain to that
+        cell, multiplied by ``mask`` so cells outside the mask have value 0.
     """
     # R: nx=nrow(direction)  ny=ncol(direction)
     nx = direction.shape[0]
