@@ -29,6 +29,82 @@ def river_smooth(
     d4: Tuple[int, int, int, int] = (1, 2, 3, 4),
     printflag: bool = False,
 ) -> Dict[str, np.ndarray]:
+    """
+    Smooth a DEM along a predefined stream network and enforce bank slopes.
+
+    This function will smooth a DEM along a stream network. It requires pre-defined 
+    stream segments and subbasins which are obtained using the CalcSubbasins function.
+    
+    Parameters
+    ----------
+    dem : np.ndarray
+        2D array of elevations for the domain \((nx, ny)\).
+    direction : np.ndarray
+        2D array of D4 flow directions for each cell, using the
+        convention encoded in ``d4``.
+    mask : np.ndarray, optional
+        2D mask defining the domain extent to be considered. Cells with
+        value 0 are excluded from processing. If ``None``, the entire
+        DEM is used.
+    river_summary : np.ndarray, optional
+        Summary table of stream segments with one row per segment and
+        seven columns:
+
+        1. Subbasin (segment) ID number.
+        2. Row index of the upstream end of the segment.
+        3. Column index of the upstream end of the segment.
+        4. Row index of the downstream end of the segment.
+        5. Column index of the downstream end of the segment.
+        6. Subbasin ID of the downstream basin (``-1`` indicates that
+           the segment drains out of the domain).
+        7. Drainage area of the subbasin.
+
+        Indices are 0-based (row, col) for array indexing in this
+        Python implementation.
+    river_segments : np.ndarray, optional
+        2D array with the same shape as ``dem`` indicating the subbasin
+        (segment) ID for each cell on the river network. Cells not on
+        the river network should be zero.
+    bank_epsilon : float, optional
+        Minimum elevation difference between river cells and adjacent
+        hillslope cells when walking up the banks from the river
+        network. Passed through to ``fix_drainage``.
+    river_epsilon : float, optional
+        Minimum elevation difference per cell along the river segments.
+        Used to enforce a monotonic drop in elevation from the upstream
+        to downstream end of each segment.
+    d4 : tuple of int, optional
+        Direction numbering system for the D4 neighbors, given as
+        ``(down, left, up, right)``. Defaults to ``(1, 2, 3, 4)`` to
+        match the original R implementation.
+    printflag : bool, optional
+        If ``True``, print progress and diagnostic information while
+        smoothing each river segment.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Dictionary containing:
+
+        - ``\"dem.adj\"``: 2D array of DEM elevations after river
+          smoothing and bank adjustments.
+        - ``\"processed\"``: 2D mask indicating cells that were
+          processed by this routine (1 = processed, 0 = not processed),
+          which should match the river network mask when all segments
+          are successfully handled.
+        - ``\"summary\"``: 2D array summarizing each river segment with
+          one row per segment and the following columns:
+
+          1. River segment ID number.
+          2. Row index of the top of the segment.
+          3. Column index of the top of the segment.
+          4. Row index of the bottom of the segment.
+          5. Column index of the bottom of the segment.
+          6. Length of the segment (number of cells).
+          7. Elevation at the top of the segment.
+          8. Elevation at the bottom of the segment.
+          9. Delta applied along the segment (i.e. \((\text{top}-\text{bottom})/\text{length}\)).
+    """
     # R: nx=dim(direction)[1]  ny=dim(direction)[2]  (set after dir2)
     nx = direction.shape[0]
     ny = direction.shape[1]

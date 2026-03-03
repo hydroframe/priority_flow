@@ -36,7 +36,53 @@ def init_queue(
     d4: Tuple[int, int, int, int] = (1, 2, 3, 4),
 ) -> Dict[str, np.ndarray]:
     """
-    Initialize queue for topographic processing (InitQueue in R).
+    Initialize queue for topographic processing.
+
+    Sets up a queue and initializes marked and step matrices for DEM processing
+
+    This function is a port of the R function ``InitQueue`` from the
+    PriorityFlow package. It sets up the initial queue of cells, along
+    with ``marked``, ``step``, ``basin`` and ``direction`` matrices used
+    during DEM processing.
+
+    Parameters
+    ----------
+    dem : np.ndarray
+        2D array of elevations for the domain \((nx, ny)\).
+    initmask : np.ndarray, optional
+        Mask with the same shape as ``dem`` indicating the subset of
+        cells to be considered for the initial queue (for example, only
+        river cells). If ``None``, all border cells in the domain are
+        eligible to be added to the queue.
+    domainmask : np.ndarray, optional
+        Mask defining the domain extent to be considered. If ``None``,
+        the entire rectangular extent of ``dem`` is used as the domain.
+    border : np.ndarray, optional
+        Optional pre-computed border mask. If ``None``, the border is
+        derived from ``domainmask`` (cells on the outer edge of the
+        domain and internal boundaries).
+    d4 : tuple of int, optional
+        Direction numbering system for the D4 neighbors, given as
+        ``(down, left, up, right)``. Defaults to ``(1, 2, 3, 4)`` to
+        match the original R implementation.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Dictionary containing:
+
+        - ``\"mask\"``: the effective initialization mask used to define
+          candidate outlet cells (``initmask`` after any defaults).
+        - ``\"queue\"``: 2D array of outlet cells with columns
+          ``(row, col, elevation)`` in column-major order, suitable for
+          use with ``d4_traverse_b``.
+        - ``\"marked\"``: 2D array indicating which cells were added to
+          the initial queue (1 for queue cells, 0 otherwise).
+        - ``\"basins\"``: 2D array assigning a unique basin number to
+          each outlet cell (queue entry).
+        - ``\"direction\"``: 2D array of flow directions at outlet
+          points, pointing out of the domain, using the ``d4`` numbering
+          scheme.
     """
     # initialize queue and matrices
     # R: ny=ncol(dem)  nx=nrow(dem)

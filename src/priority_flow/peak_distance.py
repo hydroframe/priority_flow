@@ -22,6 +22,8 @@ def peak_dist(
     topographic peaks using a topological sorting approach. This function
     identifies headwater cells and propagates distance information downstream
     following flow directions.
+
+    NOTE: This function has not yet been tested and is not fully implemented.
     
     Parameters
     ----------

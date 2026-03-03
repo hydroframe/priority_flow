@@ -23,6 +23,51 @@ def riv_slope(
     river_mask: Optional[np.ndarray] = None,
     remove_sec: bool = False,
 ) -> Dict[str, np.ndarray]:
+    """
+    Apply minimum slope and secondary scaling to river cells.
+
+    A funtion that will apply a minimum slope threshold for the primary 
+    flow direciton along river cells. This function can also limit secondary 
+    slopes out of river cells to zero. 
+    
+    Parameters
+    ----------
+    direction : np.ndarray
+        2D array of D4 flow directions for each cell, using the
+        convention ``1 = down``, ``2 = left``, ``3 = up``, ``4 = right``.
+    slopex : np.ndarray
+        2D array of face-centered slopes in the x-direction. These
+        should be the same slopes produced by ``slope_calc_standard``.
+    slopey : np.ndarray
+        2D array of face-centered slopes in the y-direction, compatible
+        with ``slope_calc_standard``.
+    minslope : float
+        Threshold for slope adjustment. For each river cell, the
+        absolute value of the primary-direction slope is adjusted so
+        that ``abs(slope) >= minslope``.
+    river_mask : np.ndarray, optional
+        2D mask indicating which cells are treated as river cells
+        (typically 1 for river, 0 for non-river). Only these cells are
+        subject to minimum-slope and secondary-slope adjustments.
+    remove_sec : bool, optional
+        If ``True``, any secondary outflows from river cells (i.e.
+        positive slopes in non-primary directions) are set to zero.
+        Defaults to ``False``.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Dictionary containing:
+
+        - ``\"slopex\"``: adjusted x-direction slope field.
+        - ``\"slopey\"``: adjusted y-direction slope field.
+        - ``\"adj_mask\"``: mask of cells that were adjusted (non-zero
+          where primary or secondary slopes were modified).
+        - ``\"SlopeOutlet\"``: original primary outlet slope at each
+          river cell before adjustment.
+        - ``\"SlopeOutletNew\"``: primary outlet slope at each river
+          cell after adjustment.
+    """
     # R: nx=dim(direction)[1]  ny=dim(direction)[2]
     nx = direction.shape[0]
     ny = direction.shape[1]

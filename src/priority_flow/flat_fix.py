@@ -24,6 +24,8 @@ def fix_flat(
     A function that finds cells where the total output slope is much less than the input
     slopes and adjusts the outlet slope to address this. This is useful for fixing
     flat areas and stagnation points in flow calculations.
+
+    NOTE: This function has not yet been tested and is not fully implemented.
     
     Parameters
     ----------

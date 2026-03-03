@@ -23,6 +23,8 @@ def lin_dist(
     Calculates the minimum linear distance between every point in a 2D array
     and a mask of target points. Note that this function assumes dx=dy, i.e.,
     square grid cells. If this is not the case, it will not work correctly.
+
+    NOTE: This function has not yet been tested and is not fully implemented.
     
     Parameters
     ----------
