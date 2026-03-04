@@ -31,8 +31,11 @@ def slope_calc_upwind(
     upflag: bool = True,
 ) -> dict[str, np.ndarray]:
     """
-    Calculate slopes from a DEM with upwinding consistent with ParFlow OverlandFlow.
+    Calculate slopes from a DEM.
 
+    This function will calculate slopes using standard or upwinding 
+    options and apply a range of smoothing options.
+    
     Parameters
     ----------
     dem : np.ndarray
@@ -67,6 +70,22 @@ def slope_calc_upwind(
         Print progress.
     upflag : bool
         If True, downwind slopes for OverlandFlow; if False, standard [i+1]-[i] (OverlandKin).
+
+    Notes
+    -----
+    **River methods**:
+
+    - ``0``: default value, no special treatment for river cells.
+    - ``1``: scale secondary slopes along the river (requires a river
+      mask and a river-specific secondary threshold).
+    - ``2``: apply watershed mean slope to each river reach (requires
+      river mask and subbasins).
+    - ``3``: apply the stream mean slope to each reach (requires river
+      mask and subbasins).
+
+    NOTE: The river mask can differ from the rivers used to create the
+    subbasins (for example, using a higher threshold to define
+    subbasins and a lower threshold to define river cells).
 
     Returns
     -------
