@@ -21,6 +21,8 @@ def stream_dist(
     This function uses a stream mask and a flow direction file to determine the overland
     flow distance from any point in the domain to its nearest stream neighbor following
     the defined primary flow directions.
+
+    NOTE: This function has not been tested and is not fully implemented yet.
     
     Parameters
     ----------
