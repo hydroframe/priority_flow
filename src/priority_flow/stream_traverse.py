@@ -28,7 +28,11 @@ def stream_traverse(
     epsilon: float = 0.0,
 ) -> Dict[str, np.ndarray]:
     """
-    DEM processing of stream networks (R: StreamTraverse).
+    DEM processing of stream networks.
+
+    Function to process stream networks walking upstream on d4 neigbors 
+    in a river mask. Where no D4 neigbhors exist it looks for d8 neigbors 
+    and creates d4 bridges to these diagonal cells.
 
     Parameters
     ----------
