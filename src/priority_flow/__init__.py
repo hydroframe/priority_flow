@@ -22,11 +22,9 @@ from .fix_drainage import fix_drainage
 from .downstream_extract import path_extract
 from .define_subbasins import calc_subbasins
 from .cal_stream_order import calc_stream_order
-from .write_raster import write_raster
 from .stream_distance import stream_dist
 from .stream_traverse import stream_traverse
 from .river_smoothing import river_smooth
-from .run_pf import run_pf
 from .river_slope import riv_slope
 from .peak_distance import peak_dist
 from .linear_distance import lin_dist
@@ -52,7 +50,6 @@ __all__ = [
     "path_extract",
     "calc_subbasins",
     "calc_stream_order",
-    "write_raster",
     "stream_dist",
     "stream_traverse",
     "river_smooth",
