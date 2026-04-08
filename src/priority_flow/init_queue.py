@@ -48,7 +48,7 @@ def init_queue(
     Parameters
     ----------
     dem : np.ndarray
-        2D array of elevations for the domain \((nx, ny)\).
+        2D array of elevations for the domain in HydroFrame orientation (nx by ny).
     initmask : np.ndarray, optional
         Mask with the same shape as ``dem`` indicating the subset of
         cells to be considered for the initial queue (for example, only
@@ -84,6 +84,15 @@ def init_queue(
           points, pointing out of the domain, using the ``d4`` numbering
           scheme.
     """
+    # HydroFrame layout -> internal R-style layout (transpose)
+    dem = dem.T.copy()
+    if initmask is not None:
+        initmask = initmask.T.copy()
+    if domainmask is not None:
+        domainmask = domainmask.T.copy()
+    if border is not None:
+        border = border.T.copy()
+
     # initialize queue and matrices
     # R: ny=ncol(dem)  nx=nrow(dem)
     ny = dem.shape[1]
@@ -196,13 +205,15 @@ def init_queue(
         direction[xtemp, ytemp] = kd[dtemp, 2]
     # R: }
 
+    # Internal layout -> HydroFrame layout (transpose 2D arrays; swap queue row/col)
+    queue_hf = np.column_stack((queue[:, 1], queue[:, 0], queue[:, 2]))
     # R: output_list=list("mask"=initmask,"queue" = queue, "marked"=marked, "basins"=basin, "direction"=direction)
     output_list = {
-        "mask": initmask,
-        "queue": queue,
-        "marked": marked,
-        "basins": basin,
-        "direction": direction,
+        "mask": initmask.T,
+        "queue": queue_hf,
+        "marked": marked.T,
+        "basins": basin.T,
+        "direction": direction.T,
     }
     # R: return(output_list)
     return output_list
