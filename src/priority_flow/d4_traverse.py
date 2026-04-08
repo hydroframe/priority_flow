@@ -38,7 +38,7 @@ def d4_traverse_b(
     Parameters
     ----------
     dem : np.ndarray
-        2D array of elevations for the domain \((nx, ny)\).
+        2D array of elevations for the domain in HydroFrame layout \((nx, ny)\).
     queue : np.ndarray
         Initial priority queue with shape ``(n, 3)``. Each row is
         ``(i, j, elevation)`` giving the row index, column index and
@@ -104,6 +104,19 @@ def d4_traverse_b(
     """
     if n_chunk is not None:
         nchunk = n_chunk
+
+    # HydroFrame layout -> internal R-style layout (same convention as init_queue)
+    dem = dem.T.copy()
+    queue = np.column_stack((queue[:, 1], queue[:, 0], queue[:, 2])).copy()
+    marked = marked.T.copy()
+    if mask is not None:
+        mask = mask.T.copy()
+    if step is not None:
+        step = step.T.copy()
+    if direction is not None:
+        direction = direction.T.copy()
+    if basins is not None:
+        basins = basins.T.copy()
 
     # R: t0=proc.time()
     # R: nx=dim(dem)[1]  ny=dim(dem)[2]
@@ -346,14 +359,15 @@ def d4_traverse_b(
             else:
                 direction[bx - 1, by - 1] = d4[pick]
 
+    # Internal layout -> HydroFrame layout (transpose 2D fields)
     # R: output_list=list("dem"=demnew, "mask"=mask, "marked"=marked, "step"= step, "direction"=direction, "basins"=basins)
     output_list = {
-        "dem": demnew,
-        "mask": mask,
-        "marked": marked,
-        "step": step,
-        "direction": direction,
-        "basins": basins,
+        "dem": demnew.T,
+        "mask": mask.T,
+        "marked": marked.T,
+        "step": step.T,
+        "direction": direction.T,
+        "basins": basins.T,
     }
     # R: return(output_list)
     return output_list
