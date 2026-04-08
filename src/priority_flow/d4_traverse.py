@@ -38,7 +38,7 @@ def d4_traverse_b(
     Parameters
     ----------
     dem : np.ndarray
-        2D array of elevations for the domain in HydroFrame layout \((nx, ny)\).
+        2D array of elevations for the domain in HydroFrame layout (nx, ny).
     queue : np.ndarray
         Initial priority queue with shape ``(n, 3)``. Each row is
         ``(i, j, elevation)`` giving the row index, column index and
