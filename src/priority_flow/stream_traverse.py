@@ -64,6 +64,18 @@ def stream_traverse(
         Dictionary with keys: "dem", "mask", "marked", "step", "direction",
         and "basins".
     """
+    # HydroFrame layout -> internal R-style layout (same convention as init_queue / d4_traverse_b)
+    dem = dem.T.copy()
+    mask = mask.T.copy()
+    marked = marked.T.copy()
+    queue = np.column_stack((queue[:, 1], queue[:, 0], queue[:, 2])).copy()
+    if step is not None:
+        step = step.T.copy()
+    if direction is not None:
+        direction = direction.T.copy()
+    if basins is not None:
+        basins = basins.T.copy()
+
     # R: nx=dim(dem)[1]  ny=dim(dem)[2]
     nx, ny = dem.shape
     # R: demnew=dem
@@ -105,7 +117,6 @@ def stream_traverse(
 
     # R: nqueue=nrow(queue)  nstep=0
     # Ensure queue is 2D
-    queue = np.asarray(queue, dtype=float)
     if queue.ndim == 1:
         queue = queue.reshape(1, -1)
     nqueue = queue.shape[0]
@@ -242,14 +253,15 @@ def stream_traverse(
         if printstep:
             print(f"Step: {nstep} NQueue: {nqueue}")
 
+    # Internal layout -> HydroFrame layout (transpose 2D fields)
     # R: output_list=list("dem"=demnew, "mask"=mask, "marked"=marked, "step"= step, "direction"=direction, "basins"=basins)
     output_list = {
-        "dem": demnew,
-        "mask": mask,
-        "marked": marked,
-        "step": step,
-        "direction": direction,
-        "basins": basins,
+        "dem": demnew.T,
+        "mask": mask.T,
+        "marked": marked.T,
+        "step": step.T,
+        "direction": direction.T,
+        "basins": basins.T,
     }
     # R: return(output_list)
     return output_list
