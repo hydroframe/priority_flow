@@ -44,6 +44,11 @@ def drainage_area(
         entry gives the number of cells (including itself) that drain to that
         cell, multiplied by ``mask`` so cells outside the mask have value 0.
     """
+    # HydroFrame layout -> internal R-style layout
+    direction = direction.T.copy()
+    if mask is not None:
+        mask = mask.T.copy()
+
     # R: nx=nrow(direction)  ny=ncol(direction)
     nx = direction.shape[0]
     ny = direction.shape[1]
@@ -203,4 +208,5 @@ def drainage_area(
 
     # R: drainarea=drainarea*mask  return(drainarea)
     drainarea = drainarea * mask
-    return drainarea
+    # Internal layout -> HydroFrame layout
+    return drainarea.T
