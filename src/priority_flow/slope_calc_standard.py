@@ -103,6 +103,8 @@ def slope_calc_standard(
     if mask is not None:
         mask = mask.T.copy()
 
+    dx, dy = dy, dx
+
     # R: ny=ncol(dem)  nx=nrow(dem)
     nx = dem.shape[0]
     ny = dem.shape[1]

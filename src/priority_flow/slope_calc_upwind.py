@@ -127,6 +127,8 @@ def slope_calc_upwind(
     if subbasins is not None:
         subbasins = np.asarray(subbasins).T.copy()
 
+    dx, dy = dy, dx
+
     # R: ny=ncol(dem)  nx=nrow(dem)
     ny = dem.shape[1]
     nx = dem.shape[0]
