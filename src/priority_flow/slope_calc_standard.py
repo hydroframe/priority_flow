@@ -36,10 +36,9 @@ def slope_calc_standard(
     Parameters
     ----------
     dem : np.ndarray
-        2D array of elevations for the domain \((nx, ny)\).
+        2D array of elevations in **HydroFrame** layout.
     direction : np.ndarray
-        2D array of D4 flow directions for each cell, using the
-        convention encoded in ``d4``.
+        2D array of D4 flow directions for each cell, using the convention encoded in ``d4``.
     dx, dy : float
         Lateral grid cell resolutions in the x and y directions,
         respectively.
@@ -98,6 +97,12 @@ def slope_calc_standard(
         - ``\"Sinks\"``: 1D array of linear indices (flattened) marking
           locations where slope signs were flipped to remove sinks.
     """
+    # HydroFrame layout -> internal R-style layout
+    dem = dem.T.copy()
+    direction = direction.T.copy()
+    if mask is not None:
+        mask = mask.T.copy()
+
     # R: ny=ncol(dem)  nx=nrow(dem)
     nx = dem.shape[0]
     ny = dem.shape[1]
@@ -256,10 +261,16 @@ def slope_calc_standard(
     fixNy = np.where((np.sign(slopey2) == 1) & (ymask == -1))
     slopey2[fixNy] = -np.abs(slopey2[fixNy])
     # R: Sinklist=c(fixPx, fixNx, fixPy, fixNy)  (linear indices)
-    fixPx_flat = np.ravel_multi_index(fixPx, (nx, ny))
-    fixNx_flat = np.ravel_multi_index(fixNx, (nx, ny))
-    fixPy_flat = np.ravel_multi_index(fixPy, (nx, ny))
-    fixNy_flat = np.ravel_multi_index(fixNy, (nx, ny))
+    # Map internal (row_R, col_R) to HydroFrame (row_HF, col_HF) before flattening.
+    shape_hf = dem.shape
+    fixPx_hf = (fixPx[1], fixPx[0])
+    fixNx_hf = (fixNx[1], fixNx[0])
+    fixPy_hf = (fixPy[1], fixPy[0])
+    fixNy_hf = (fixNy[1], fixNy[0])
+    fixPx_flat = np.ravel_multi_index(fixPx_hf, shape_hf)
+    fixNx_flat = np.ravel_multi_index(fixNx_hf, shape_hf)
+    fixPy_flat = np.ravel_multi_index(fixPy_hf, shape_hf)
+    fixNy_flat = np.ravel_multi_index(fixNy_hf, shape_hf)
     Sinklist = np.concatenate([fixPx_flat, fixNx_flat, fixPy_flat, fixNy_flat])
 
     ###################################
@@ -326,11 +337,12 @@ def slope_calc_standard(
     slopex2[np.isnan(slopex2)] = 0
     slopey2[np.isnan(slopey2)] = 0
 
+    # Internal layout -> HydroFrame layout (transpose 2D arrays)
     # R: output_list=list("slopex"=slopex2, "slopey"=slopey2, "direction"=direction, "Sinks"=Sinklist)
     output_list = {
-        "slopex": slopex2,
-        "slopey": slopey2,
-        "direction": direction,
+        "slopex": slopex2.T,
+        "slopey": slopey2.T,
+        "direction": direction.T,
         "Sinks": Sinklist,
     }
     return output_list
