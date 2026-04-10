@@ -33,19 +33,22 @@ def test_example_workflow_option_1():
     init = init_queue(DEM)
     for key in ['mask', 'marked', 'basins']:
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"init_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = init[key]
         assert np.array_equal(python_data, R_data), f"init_{key}.txt is not equal to the correct output"
     R_file = os.path.join(CORRECT_OUTPUT_DIR, "init_queue.txt")
     R_data = np.loadtxt(R_file)
     for row in R_data:
+        swap = row[0]
+        row[0] = row[1]
+        row[1] = swap
         row[0] -= 1
         row[1] -= 1
     python_data = init['queue']
     assert np.array_equal(python_data, R_data), "init_queue.txt is not equal to the correct output"
     with open(os.path.join(CORRECT_OUTPUT_DIR, "init_direction.txt")) as f:
         content = f.read().replace("NA", "nan")
-    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = init["direction"]
     assert np.array_equal(python_data, R_data, equal_nan=True), "init_direction.txt is not equal to the correct output"
 
@@ -62,13 +65,13 @@ def test_example_workflow_option_1():
         if key == "direction":
             continue
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"travHS_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = trav_hs[key]
         assert np.array_equal(python_data, R_data)
 
     with open(os.path.join(CORRECT_OUTPUT_DIR, "travHS_direction.txt")) as f:
         content = f.read().replace("NA", "nan")
-    r_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    r_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = trav_hs["direction"]
     assert np.array_equal(python_data, r_data, equal_nan=True)
 
@@ -78,7 +81,7 @@ def test_example_workflow_option_1():
         printflag=False,
     )
     R_file = os.path.join(CORRECT_OUTPUT_DIR, "drainage_area.txt")
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     assert np.array_equal(area, R_data)
 
     subbasin = calc_subbasins(
@@ -91,11 +94,17 @@ def test_example_workflow_option_1():
         if key == "summary":
             continue
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"subbasin_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = subbasin[key]
         assert np.array_equal(python_data, R_data)
     r_data = np.loadtxt(os.path.join(CORRECT_OUTPUT_DIR, "subbasin_summary.txt"))
     for row in r_data:
+        swap = row[1]
+        row[1] = row[2]
+        row[2] = swap
+        swap = row[3]
+        row[3] = row[4]
+        row[4] = swap
         for j in range(1, 5):
             row[j] -= 1
     python_data = subbasin["summary"]
