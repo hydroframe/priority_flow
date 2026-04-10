@@ -52,11 +52,14 @@ def test_downwinding_3():
         if key == 'direction' or key == 'queue':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_init_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = init[key]
         assert np.array_equal(python_data, R_data), f"Init {key} does not match reference data"
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_init_queue.txt'
     R_data = np.loadtxt(R_file)
+    swap = R_data[0]
+    R_data[0] = R_data[1]
+    R_data[1] = swap
     R_data[0] -= 1
     R_data[1] -= 1
     # Note: in this case the np.loadtxt loads a 1D rather than a 2D array.
@@ -75,18 +78,18 @@ def test_downwinding_3():
         if key == 'direction' or key == 'dem':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_trav1_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = trav1[key]
         assert np.array_equal(python_data, R_data), f"Trav1 {key} does not match reference data"
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_trav1_dem.txt'
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     python_data = trav1['dem']
     assert np.allclose(python_data, R_data), f"Trav1 dem does not match reference data"
 
     with open(f'{CORRECT_OUTPUT_DIR}/downwinding_3_trav1_direction.txt') as f:
         content = f.read().replace("NA", "nan")
 
-    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = trav1['direction']
     assert np.array_equal(R_data, python_data, equal_nan=True), f"Trav1 direction does not match reference data"
 
@@ -141,12 +144,15 @@ def test_downwinding_3():
         if key == 'direction' or key == 'queue':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_init2_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = init2[key]
         assert np.array_equal(python_data, R_data), f"Init2 {key} does not match reference data"
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_init2_queue.txt'
     R_data = np.loadtxt(R_file)
     for row in R_data:
+        swap = row[0]
+        row[0] = row[1]
+        row[1] = swap
         row[0] -= 1
         row[1] -= 1
     assert np.allclose(R_data, init2['queue']), f"Init2 queue does not match reference data"
@@ -164,11 +170,11 @@ def test_downwinding_3():
         if key == 'dem':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_travHS_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = trav_hs[key]
         assert np.array_equal(python_data, R_data), f"TravHS {key} does not match reference data"
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_travHS_dem.txt'
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     python_data = trav_hs['dem']
     assert np.allclose(R_data, python_data), f"TravHS dem does not match reference data"
 
@@ -186,19 +192,19 @@ def test_downwinding_3():
         if key == 'direction':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_slopesUW_option1_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         assert np.allclose(python_data, R_data), f"SlopesUW option1 {key} does not match reference data"
     with open('/home/ga6/downwinding_3_slopesUW_option1_direction.txt') as f:
         content = f.read().replace("NA", "nan")
-    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = slopes_uw['direction']
     assert np.array_equal(R_data, python_data, equal_nan=True), f"SlopesUW option1 direction does not match reference data"
 
     #Option 2:
     area = drainage_area(trav_hs["direction"], printflag=False)
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_area_from_travHS_direction.txt'
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     python_data = area
     assert np.array_equal(R_data, python_data, equal_nan=True), f"Area from travHS direction does not match reference data"
 
@@ -213,12 +219,18 @@ def test_downwinding_3():
         if key == 'summary':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_subbasin_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = subbasin[key]
         assert np.array_equal(python_data, R_data), f"Subbasin {key} does not match reference data"
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_subbasin_summary.txt'
     R_data = np.loadtxt(R_file)
     for row in R_data:
+        swap = row[1]
+        row[1] = row[2]
+        row[2] = swap
+        swap = row[3]
+        row[3] = row[4]
+        row[4] = swap
         for j in range(1, 5):
             row[j] -= 1
     assert np.array_equal(R_data, subbasin['summary']), f"Subbasin summary does not match reference data"
@@ -239,12 +251,12 @@ def test_downwinding_3():
         if key == 'direction':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_slopesUW_option2_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         assert np.allclose(python_data, R_data), f"SlopesUW option2 {key} does not match reference data"
     with open(f'{CORRECT_OUTPUT_DIR}/downwinding_3_slopesUW_option2_direction.txt') as f:
         content = f.read().replace("NA", "nan")
-    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = slopes_uw['direction']
     assert np.array_equal(R_data, python_data, equal_nan=True), f"SlopesUW option2 direction does not match reference data"
 
@@ -268,17 +280,17 @@ def test_downwinding_3():
         if key == 'direction':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_slopesUW_option2b_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         assert np.allclose(python_data, R_data), f"SlopesUW option2b {key} does not match reference data"
     with open('/home/ga6/downwinding_3_slopesUW_option2b_direction.txt') as f:
         content = f.read().replace("NA", "nan")
-    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = slopes_uw['direction']
     assert np.array_equal(R_data, python_data, equal_nan=True), f"SlopesUW option2b direction does not match reference data"
 
     area = drainage_area(slopes_uw["direction"], printflag=False)
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_3_area_from_final_direction.txt'
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     python_data = area
     assert np.array_equal(R_data, python_data, equal_nan=True), f"Area from final direction does not match reference data"
