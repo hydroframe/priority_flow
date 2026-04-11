@@ -103,7 +103,7 @@ def river_smooth(
           6. Length of the segment (number of cells).
           7. Elevation at the top of the segment.
           8. Elevation at the bottom of the segment.
-          9. Delta applied along the segment (i.e. \((\text{top}-\text{bottom})/\text{length}\)).
+          9. Delta applied along the segment (i.e. (top-bottom)/length).
     """
     # HF (row, col) endpoints -> internal (col, row) after dem.T
     t = river_summary[:, 1].copy()
