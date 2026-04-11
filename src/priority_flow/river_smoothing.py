@@ -38,7 +38,7 @@ def river_smooth(
     Parameters
     ----------
     dem : np.ndarray
-        2D array of elevations for the domain \((nx, ny)\).
+        2D array of elevations for the domain (nx, ny).
     direction : np.ndarray
         2D array of D4 flow directions for each cell, using the
         convention encoded in ``d4``.
