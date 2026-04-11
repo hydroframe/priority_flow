@@ -204,7 +204,7 @@ def test_downwinding_4():
         R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         assert np.allclose(python_data, R_data)
-    with open('/home/ga6/downwinding_4_slopesUW_option1_direction.txt') as f:
+    with open(f'{CORRECT_OUTPUT_DIR}/downwinding_4_slopesUW_option1_direction.txt') as f:
         content = f.read().replace("NA", "nan")
 
     R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
@@ -235,7 +235,7 @@ def test_downwinding_4():
         R_data = np.loadtxt(R_file).T
         python_data = subbasin[key]
         assert np.array_equal(python_data, R_data)
-    R_data = np.loadtxt('/home/ga6/downwinding_4_subbasin_summary.txt')
+    R_data = np.loadtxt(f'{CORRECT_OUTPUT_DIR}/downwinding_4_subbasin_summary.txt')
     for row in R_data:
         swap = row[1]
         row[1] = row[2]
@@ -267,7 +267,7 @@ def test_downwinding_4():
         R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         assert np.allclose(python_data, R_data)
-    with open('/home/ga6/downwinding_4_slopesUW_option2_direction.txt') as f:
+    with open(f'{CORRECT_OUTPUT_DIR}/downwinding_4_slopesUW_option2_direction.txt') as f:
         content = f.read().replace("NA", "nan")
     R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = slopes_uw['direction']

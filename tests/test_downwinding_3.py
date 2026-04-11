@@ -195,7 +195,7 @@ def test_downwinding_3():
         R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         assert np.allclose(python_data, R_data), f"SlopesUW option1 {key} does not match reference data"
-    with open('/home/ga6/downwinding_3_slopesUW_option1_direction.txt') as f:
+    with open(f'{CORRECT_OUTPUT_DIR}/downwinding_3_slopesUW_option1_direction.txt') as f:
         content = f.read().replace("NA", "nan")
     R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = slopes_uw['direction']
@@ -283,7 +283,7 @@ def test_downwinding_3():
         R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         assert np.allclose(python_data, R_data), f"SlopesUW option2b {key} does not match reference data"
-    with open('/home/ga6/downwinding_3_slopesUW_option2b_direction.txt') as f:
+    with open(f'{CORRECT_OUTPUT_DIR}/downwinding_3_slopesUW_option2b_direction.txt') as f:
         content = f.read().replace("NA", "nan")
     R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = slopes_uw['direction']
