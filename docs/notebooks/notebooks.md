@@ -1,4 +1,7 @@
-# Notebooks
+# Example Notebooks
+
+```{include} README.md
+```
 
 ```{toctree}
 :maxdepth: 1
