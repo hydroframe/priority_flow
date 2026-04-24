@@ -50,6 +50,11 @@ def find_orphan(
     The algorithm uses D8 connectivity (8-directional) to ensure complete
     neighbor checking and proper orphan identification.
     """
+    # HydroFrame layout -> internal R-style layout (same convention as stream_traverse/init_queue)
+    dem = dem.T.copy()
+    mask = mask.T.copy()
+    marked = marked.T.copy()
+
     nx, ny = dem.shape
 
     kd = np.zeros((8, 2), dtype=float)
@@ -93,7 +98,12 @@ def find_orphan(
                         [float(xtemp), float(ytemp), float(dem[xtemp, ytemp])]
                     )
         if queue_list:
-            queue = np.array(queue_list, dtype=float)
+            # Internal R-style queue is (row, col, elevation)
+            queue_internal = np.array(queue_list, dtype=float)
+            # Convert back to HydroFrame queue layout expected by stream_traverse input
+            queue = np.column_stack(
+                (queue_internal[:, 1], queue_internal[:, 0], queue_internal[:, 2])
+            )
         else:
             queue = np.empty((0, 3), dtype=float)
     else:
