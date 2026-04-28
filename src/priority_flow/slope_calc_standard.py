@@ -264,7 +264,7 @@ def slope_calc_standard(
     slopey2[fixNy] = -np.abs(slopey2[fixNy])
     # R: Sinklist=c(fixPx, fixNx, fixPy, fixNy)  (linear indices)
     # Map internal (row_R, col_R) to HydroFrame (row_HF, col_HF) before flattening.
-    shape_hf = dem.shape
+    shape_hf = (dem.shape[1], dem.shape[0])
     fixPx_hf = (fixPx[1], fixPx[0])
     fixNx_hf = (fixNx[1], fixNx[0])
     fixPy_hf = (fixPy[1], fixPy[0])
