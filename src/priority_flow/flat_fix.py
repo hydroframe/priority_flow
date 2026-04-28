@@ -7,7 +7,7 @@ adjusting the outlet slope to address this issue.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional
 
 
 def fix_flat(
@@ -24,8 +24,6 @@ def fix_flat(
     A function that finds cells where the total output slope is much less than the input
     slopes and adjusts the outlet slope to address this. This is useful for fixing
     flat areas and stagnation points in flow calculations.
-
-    NOTE: This function has not yet been tested and is not fully implemented.
     
     Parameters
     ----------
@@ -70,94 +68,116 @@ def fix_flat(
     - Comprehensive output reporting
     - Mask-based domain processing
     """
-    nx, ny = direction.shape
-    
+    # HydroFrame layout -> internal R-style layout
+    direction = direction.T.copy()
+    slopex = slopex.T.copy()
+    slopey = slopey.T.copy()
+    if mask is not None:
+        mask = mask.T.copy()
+
+    # R: nx=dim(direction)[1] ny=dim(direction)[2]
+    nx = direction.shape[0]
+    ny = direction.shape[1]
+
+    # R: if(missing(mask)){ ... }
     if mask is None:
-        print("No domain mask provided, using entire domain")
+        print("No domain mask provided using entire domain")
         mask = np.ones((nx, ny))
-    
-    # Setup outputs
+
+    # R: intot=outtot=outdirslop=ratio_mask=matrix(0, nrow=nx, ncol=ny)
     intot = np.zeros((nx, ny))
     outtot = np.zeros((nx, ny))
+    ratio_mask = np.zeros((nx, ny))
+    # R: outdirslope=outdirslopeNew=matrix(0, nrow=nx, ncol=ny)
     outdirslope = np.zeros((nx, ny))
     outdirslope_new = np.zeros((nx, ny))
-    ratio_mask = np.zeros((nx, ny))
-    ratio = np.full((nx, ny), -1.0)  # Setting background ratio value to -1
+    # R: ratio=matrix(-1, nrow=nx, ncol=ny)
+    ratio = np.full((nx, ny), -1.0)
+    # R: slopexNew=slopex ; slopeyNew=slopey
     slopex_new = slopex.copy()
     slopey_new = slopey.copy()
-    
-    # Loop over the domain calculating the total input slope, output slope, and the slope at the outlet
-    # Only looping over internal cells
-    for j in range(1, ny-1):
-        for i in range(1, nx-1):
+
+    # R: for(j in 2:(ny-1)){ for(i in 2:(nx-1)){ ... } }
+    for j in range(1, ny - 1):
+        for i in range(1, nx - 1):
             if mask[i, j] == 1:
-                # Total in slopes and out slopes
-                intot[i, j] = (max(slopex[i, j], 0) + max(slopey[i, j], 0) - 
-                              min(slopex[i-1, j], 0) - min(slopey[i, j-1], 0))
-                outtot[i, j] = (max(slopex[i-1, j], 0) + max(slopey[i, j-1], 0) - 
-                               min(slopex[i, j], 0) - min(slopey[i, j], 0))
-                
-                # Ratio of out to in
-                if intot[i, j] != 0:
-                    ratio[i, j] = outtot[i, j] / intot[i, j]
-                else:
-                    ratio[i, j] = -1  # Adjust for cells where inflow is zero
-                
-                # If ratio is less than the adjustment threshold then flag it
+                # R: intot[i,j]=... ; outtot[i,j]=...
+                intot[i, j] = (
+                    max(slopex[i, j], 0)
+                    + max(slopey[i, j], 0)
+                    - min(slopex[i - 1, j], 0)
+                    - min(slopey[i, j - 1], 0)
+                )
+                outtot[i, j] = (
+                    max(slopex[i - 1, j], 0)
+                    + max(slopey[i, j - 1], 0)
+                    - min(slopex[i, j], 0)
+                    - min(slopey[i, j], 0)
+                )
+
+                # R: ratio[i,j]=outtot[i,j]/intot[i,j]
+                ratio[i, j] = outtot[i, j] / intot[i, j]
+
+                # R: if(abs(ratio[i,j])==Inf){ratio[i,j]=(-1)}
+                if np.abs(ratio[i, j]) == np.inf:
+                    ratio[i, j] = -1
+
+                # R: if(ratio[i,j]<adj_th & ratio[i,j]>0){ratio_mask[i,j]=1}
                 if ratio[i, j] < adj_th and ratio[i, j] > 0:
                     ratio_mask[i, j] = 1
-                
-                # Adjust the outlet slope
+
+                # R: if(is.na(direction[i,j])==F){ ... }
                 if not np.isnan(direction[i, j]):
-                    if direction[i, j] == 1:  # Down
-                        outdirslope[i, j] = slopey[i, j-1]
-                        # If the ratio is below the threshold then adjust outlet
+                    if direction[i, j] == 1:
+                        outdirslope[i, j] = slopey[i, j - 1]
                         if ratio_mask[i, j] == 1:
                             if adj_ratio > 0:
-                                slopey_new[i, j-1] = slopey[i, j-1] * adj_ratio
+                                slopey_new[i, j - 1] = slopey[i, j - 1] * adj_ratio
                             else:
-                                slopey_new[i, j-1] = intot[i, j] * adj_th * np.sign(slopey[i, j-1])
-                            outdirslope_new[i, j] = slopey_new[i, j-1]
-                        
-                    elif direction[i, j] == 2:  # Left
-                        outdirslope[i, j] = slopex[i-1, j]
-                        # If the ratio is below the threshold then adjust outlet
+                                slopey_new[i, j - 1] = (
+                                    intot[i, j] * adj_th * np.sign(slopey[i, j - 1])
+                                )
+                            outdirslope_new[i, j] = slopey_new[i, j - 1]
+
+                    elif direction[i, j] == 2:
+                        outdirslope[i, j] = slopex[i - 1, j]
                         if ratio_mask[i, j] == 1:
                             if adj_ratio > 0:
-                                slopex_new[i-1, j] = slopex[i-1, j] * adj_ratio
+                                slopex_new[i - 1, j] = slopex[i - 1, j] * adj_ratio
                             else:
-                                slopex_new[i-1, j] = intot[i, j] * adj_th * np.sign(slopex[i-1, j])
-                            outdirslope_new[i, j] = slopex_new[i-1, j]
-                        
-                    elif direction[i, j] == 3:  # Up
+                                slopex_new[i - 1, j] = (
+                                    intot[i, j] * adj_th * np.sign(slopex[i - 1, j])
+                                )
+                            outdirslope_new[i, j] = slopex_new[i - 1, j]
+
+                    elif direction[i, j] == 3:
                         outdirslope[i, j] = slopey[i, j]
-                        # If the ratio is below the threshold then adjust outlet
                         if ratio_mask[i, j] == 1:
                             if adj_ratio > 0:
                                 slopey_new[i, j] = slopey[i, j] * adj_ratio
                             else:
                                 slopey_new[i, j] = intot[i, j] * adj_th * np.sign(slopey[i, j])
                             outdirslope_new[i, j] = slopey_new[i, j]
-                        
-                    elif direction[i, j] == 4:  # Right
+
+                    elif direction[i, j] == 4:
                         outdirslope[i, j] = slopex[i, j]
-                        # If the ratio is below the threshold then adjust outlet
                         if ratio_mask[i, j] == 1:
                             if adj_ratio > 0:
                                 slopex_new[i, j] = slopex[i, j] * adj_ratio
                             else:
                                 slopex_new[i, j] = intot[i, j] * adj_th * np.sign(slopex[i, j])
                             outdirslope_new[i, j] = slopex_new[i, j]
-    
+
+    # Internal layout -> HydroFrame layout (transpose 2D arrays)
     output_list = {
-        "outslope": outtot,
-        "inslope": intot,
-        "OutIn_ratio": ratio,
-        "slopex": slopex_new,
-        "slopey": slopey_new,
-        "adj_mask": ratio_mask,
-        "SlopeOutlet": outdirslope,
-        "SlopeOutletNew": outdirslope_new
+        "outslope": outtot.T,
+        "inslope": intot.T,
+        "OutIn_ratio": ratio.T,
+        "slopex": slopex_new.T,
+        "slopey": slopey_new.T,
+        "adj_mask": ratio_mask.T,
+        "SlopeOutlet": outdirslope.T,
+        "SlopeOutletNew": outdirslope_new.T,
     }
-    
-    return output_list 
+
+    return output_list
