@@ -1,87 +1,48 @@
 """
-Stream Distance functions for PriorityFlow.
+Find the distance to the nearest stream point following drainage directions.
 
-This module provides functions to find the distance to the nearest stream point
-following drainage directions using a stream mask and flow direction file.
+Line-by-line translation of Stream_Distance.R (StreamDist) from the R
+PriorityFlow package. R uses 1-based indexing; we use 0-based.
 """
 
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple
 
 
 def stream_dist(
     direction: np.ndarray,
     streammask: np.ndarray,
     domainmask: Optional[np.ndarray] = None,
-    d4: Tuple[int, int, int, int] = (1, 2, 3, 4)
+    d4: Tuple[int, int, int, int] = (1, 2, 3, 4),
 ) -> Dict[str, np.ndarray]:
     """
-    Find the distance to the nearest stream point following drainage directions.
-    
-    This function uses a stream mask and a flow direction file to determine the overland
-    flow distance from any point in the domain to its nearest stream neighbor following
-    the defined primary flow directions.
-
-    NOTE: This function has not been tested and is not fully implemented yet.
-    
-    Parameters
-    ----------
-    direction : np.ndarray
-        Flow direction matrix
-    streammask : np.ndarray
-        Mask with a value of 1 for every stream cell and 0 for all non-stream cells.
-        Refer to the CalcSubbasins function to derive this mask.
-    domainmask : np.ndarray, optional
-        Optional mask of the domain area with a value of 1 for cells inside the domain
-        and 0 for cells outside the domain. If no mask is provided, it will default to
-        using the entire rectangular domain.
-    d4 : Tuple[int, int, int, int], optional
-        D4 direction numbering scheme. Defaults to (1, 2, 3, 4) for (down, left, up, right).
-    
-    Returns
-    -------
-    Dict[str, np.ndarray]
-        A dictionary containing:
-        - 'stream.dist': Matrix of distances in cells along the flow directions to any stream cell
-        - 'stream.xind': Matrix of x indices of each cell's closest stream cell
-        - 'stream.yind': Matrix of y indices of each cell's closest stream cell
-    
-    Notes
-    -----
-    This function implements a stream distance calculation algorithm that:
-    1. Starts from stream cells and works upstream following flow directions
-    2. Calculates overland flow distances to the nearest stream neighbor
-    3. Tracks the coordinates of the closest stream cell for each location
-    4. Handles custom D4 direction numbering schemes
-    5. Respects domain masks and boundary conditions
-    
-    The algorithm handles:
-    - Queue-based processing starting from stream cells
-    - Flow direction following for distance calculation
-    - Stream cell coordinate tracking
-    - Domain boundary and mask respect
-    - Custom D4 direction scheme support
-    
-    Note: This function will ignore cells that drain to the outside of the domain.
-    A border option could be added later to handle these cases.
+    Find stream distance using flow-direction traversal upstream from streams.
     """
-    nx, ny = direction.shape
-    
-    # D4 neighbor offsets
-    # Rows: down, left, up, right
-    # Columns: (1) deltax, (2) deltay, (3) direction number
-    ku = np.array([
-        [0, 1, 1],     # Down
-        [1, 0, 2],     # Left
-        [0, -1, 3],    # Up
-        [-1, 0, 4]     # Right
-    ])
-    
-    # Default to processing everything if domain mask not provided
+    # HydroFrame layout -> internal R-style layout
+    direction = direction.T.copy()
+    streammask = streammask.T.copy()
+    if domainmask is not None:
+        domainmask = domainmask.T.copy()
+
+    # R: nx=dim(direction)[1] ; ny=dim(direction)[2]
+    nx = direction.shape[0]
+    ny = direction.shape[1]
+
+    # R:
+    # ku=matrix(0, nrow=4, ncol=3)
+    # ku[,1]=c(0,1,0,-1)
+    # ku[,2]=c(1,0,-1,0)
+    # ku[,3]=c(1,2,3,4)
+    ku = np.zeros((4, 3), dtype=int)
+    ku[:, 0] = [0, 1, 0, -1]
+    ku[:, 1] = [1, 0, -1, 0]
+    ku[:, 2] = [1, 2, 3, 4]
+
+    # R: if(missing(domainmask)){domainmask=matrix(1, nrow=nx, ncol=ny)}
     if domainmask is None:
         domainmask = np.ones((nx, ny))
-    
-    # Renumber the directions to 1=down, 2=left, 3=up, 4=right if a different numbering scheme was used
+
+    # R: renumber directions to 1,2,3,4 if custom d4 was passed
     dir2 = direction.copy()
     if d4[0] != 1:
         dir2[direction == d4[0]] = 1
@@ -91,75 +52,85 @@ def stream_dist(
         dir2[direction == d4[2]] = 3
     if d4[3] != 4:
         dir2[direction == d4[3]] = 4
-    
-    # Start a queue with every cell on the stream mask
-    # NOTE: This is going to ignore cells that drain to the outside of the domain
-    # Could add a border option later potentially
-    queue = np.where(streammask == 1)
-    queue = np.column_stack((queue[0], queue[1]))  # Convert to 2D array format
-    
-    # distance = distance in cells along the flow directions to any stream cell
-    # streamx and streamy are the x,y indices of each cell's closest stream cell respectively
+
+    # R: queue=which(streammask==1, arr.ind=T)
+    # R arr.ind gives 1-based matrix indices; convert to 0-based.
+    queue = np.argwhere(streammask == 1)
+
+    # R: distance=matrix(NA, nrow=nx, ncol=ny)
     distance = np.full((nx, ny), np.nan)
-    
-    # Initialize distance to 0 along the stream mask
-    # Initialize streamx and streamy to the stream cell indices along the stream mask
+
+    # R: distance[which(streammask==1)]=0
     distance[streammask == 1] = 0
-    
-    # Create coordinate matrices
-    streamy = np.tile(np.arange(ny), (nx, 1))  # Matrix with y coordinates
-    streamx = np.tile(np.arange(nx), (ny, 1)).T  # Matrix with x coordinates
-    
-    # Set non-stream cells to NaN
+
+    # R:
+    # streamy=matrix(rep(1:ny,nx), ncol=ny, byrow=T)
+    # streamx=matrix(rep(1:nx,ny), ncol=ny, byrow=F)
+    # Keep R's 1-based index values in outputs.
+    streamy = np.tile(np.arange(1, ny + 1), (nx, 1)).astype(float)
+    streamx = np.tile(np.arange(1, nx + 1), (ny, 1)).T.astype(float)
     streamx[streammask == 0] = np.nan
     streamy[streammask == 0] = np.nan
-    
+
+    # R: active=TRUE
     active = True
-    
+
+    # R: while(active==T){ ... }
     while active:
-        if len(queue) == 0:
+        # Safety for empty queue (R version assumes non-empty)
+        if queue.shape[0] == 0:
             break
-            
-        indx = queue[0, 0]
-        indy = queue[0, 1]
-        
+
+        # R: indx=queue[1,1] ; indy=queue[1,2]
+        indx = int(queue[0, 0])
+        indy = int(queue[0, 1])
+
+        # R: queuetemp=NULL
         queuetemp = []
-        
-        # Loop over four directions, check for non-stream neighbors pointing to this cell
+
+        # R: for(d in 1:4){ ... }
         for d in range(4):
+            # R: tempx=indx+ku[d,1] ; tempy=indy+ku[d,2]
             tempx = indx + ku[d, 0]
             tempy = indy + ku[d, 1]
-            
-            # If it's pointing to the cell, is within the mask of cells to be processed, and has domain mask == 1
-            if (tempx >= 0 and tempy >= 0 and tempx < nx and tempy < ny):
-                # Check if the neighbor points to the current cell (drainage direction check)
-                if ((d + 1 - dir2[tempx, tempy]) == 0 and 
-                    streammask[tempx, tempy] == 0 and 
-                    domainmask[tempx, tempy] == 1):
-                    
+
+            # R: if(tempx*tempy>0 & tempx<nx & tempy<ny){
+            # 1-based strict interior bounds => 0-based: tempx>0,tempy>0,tempx<nx-1,tempy<ny-1
+            if tempx > 0 and tempy > 0 and tempx < (nx - 1) and tempy < (ny - 1):
+                # R: if((d-dir2[tempx,tempy])==0 & streammask==0 & domainmask==1)
+                if (
+                    ((d + 1) - dir2[tempx, tempy]) == 0
+                    and streammask[tempx, tempy] == 0
+                    and domainmask[tempx, tempy] == 1
+                ):
+                    # R: distance[tempx,tempy]=distance[indx,indy]+1
                     distance[tempx, tempy] = distance[indx, indy] + 1
                     streamx[tempx, tempy] = streamx[indx, indy]
                     streamy[tempx, tempy] = streamy[indx, indy]
-                    queuetemp.append([tempx, tempy])
-        
-        # If cells were adjusted, then add to the top of the queue replacing the cell that was just done
+                    # R: queuetemp=rbind(c(tempx,tempy),queuetemp)
+                    queuetemp.insert(0, [tempx, tempy])
+
+        # R: if(length(queuetemp>0)){ queue=rbind(queuetemp,queue[-1,]) } else ...
         if len(queuetemp) > 0:
-            queuetemp = np.array(queuetemp)
-            queue = np.vstack([queuetemp, queue[1:]])
-        else:
-            # If no cells were adjusted, remove this cell from the queue
+            queuetemp_arr = np.array(queuetemp, dtype=int)
             if queue.shape[0] > 1:
-                queue = queue[1:]
-                # Fixing bug to keep queue formatted as a matrix if it drops down to one row
-                if queue.shape[0] == 1:
+                queue = np.vstack((queuetemp_arr, queue[1:, :]))
+            else:
+                queue = queuetemp_arr
+        else:
+            # R: if(nrow(queue)>1){ queue=queue[-1,] ... } else {active=F}
+            if queue.shape[0] > 1:
+                queue = queue[1:, :]
+                # R: if(length(queue)==2){queue=matrix(queue, ncol=2, byrow=T)}
+                if queue.ndim == 1:
                     queue = queue.reshape(1, 2)
             else:
                 active = False
-    
+
+    # Internal layout -> HydroFrame layout
     output_list = {
-        "stream.dist": distance,
-        "stream.xind": streamx,
-        "stream.yind": streamy
+        "stream.dist": distance.T,
+        "stream.xind": streamx.T,
+        "stream.yind": streamy.T,
     }
-    
-    return output_list 
+    return output_list
