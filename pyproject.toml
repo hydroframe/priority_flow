@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "priority_flow"
-version = "1.0.0"
+version = "1.0.1"
 description = "Python toolkit for topographic processing for hydrologic models - a port of the R PriorityFlow package"
 authors = ["Laura E. Condon and Reed M. Maxwell"]
 license = "GNU General Public License v3.0"
 readme = "README.md"
-homepage = "https://github.com/lecondon/PriorityFlow"
-repository = "https://github.com/lecondon/PriorityFlow"
+homepage = "https://priority-flow.readthedocs.io/en/latest/"
+repository = "https://github.com/hydroframe/priority_flow"
 keywords = ["hydrology", "topography", "DEM", "flow", "watershed", "priority-flood"]
 classifiers = [
     "Development Status :: 4 - Beta",
