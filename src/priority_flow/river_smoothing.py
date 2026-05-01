@@ -38,7 +38,7 @@ def river_smooth(
     Parameters
     ----------
     dem : np.ndarray
-        2D array of elevations for the domain \((nx, ny)\).
+        2D array of elevations for the domain (nx, ny).
     direction : np.ndarray
         2D array of D4 flow directions for each cell, using the
         convention encoded in ``d4``.
@@ -103,8 +103,22 @@ def river_smooth(
           6. Length of the segment (number of cells).
           7. Elevation at the top of the segment.
           8. Elevation at the bottom of the segment.
-          9. Delta applied along the segment (i.e. \((\text{top}-\text{bottom})/\text{length}\)).
+          9. Delta applied along the segment (i.e. (top-bottom)/length).
     """
+    # HF (row, col) endpoints -> internal (col, row) after dem.T
+    t = river_summary[:, 1].copy()
+    river_summary[:, 1] = river_summary[:, 2]
+    river_summary[:, 2] = t
+    t = river_summary[:, 3].copy()
+    river_summary[:, 3] = river_summary[:, 4]
+    river_summary[:, 4] = t
+
+    dem = dem.T.copy()
+    direction = direction.T.copy()
+    if mask is not None:
+        mask = mask.T.copy()
+    river_segments = river_segments.T.copy()
+
     # R: nx=dim(direction)[1]  ny=dim(direction)[2]  (set after dir2)
     nx = direction.shape[0]
     ny = direction.shape[1]
@@ -348,10 +362,20 @@ def river_smooth(
         if queue.size == 0:
             active = False
 
+    # Internal endpoint indices -> HydroFrame row/col for summary output
+    summary_out = riversmooth_summary.copy()
+    t = summary_out[:, 1].copy()
+    summary_out[:, 1] = summary_out[:, 2]
+    summary_out[:, 2] = t
+    t = summary_out[:, 3].copy()
+    summary_out[:, 3] = summary_out[:, 4]
+    summary_out[:, 4] = t
+
+    # Internal layout -> HydroFrame layout
     # R: output_list=list("dem.adj"=dem2, "processed"=marked.matrix, "summary"=riversmooth.summary)
     output_list = {
-        "dem.adj": dem2,
-        "processed": marked_matrix,
-        "summary": riversmooth_summary,
+        "dem.adj": dem2.T,
+        "processed": marked_matrix.T,
+        "summary": summary_out,
     }
     return output_list

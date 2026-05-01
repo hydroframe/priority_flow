@@ -1,12 +1,8 @@
-# Note: This test throws an error at the streamorder step:
-# IndexError: index 0 is out of bounds for axis 0 with size 0
-# The R workflow throws the same error.
-
 import os
 import numpy as np
 from conftest import CORRECT_OUTPUT_DIR
 
-CORRECT_OUTPUT_DIR = CORRECT_OUTPUT_DIR / "test_example_workflow_option_1"
+CORRECT_OUTPUT_DIR = CORRECT_OUTPUT_DIR / "test_example_workflow_option_3"
 
 from priority_flow import (
     init_queue,
@@ -23,29 +19,33 @@ from priority_flow import (
     riv_slope,
 )
 
-def test_example_workflow_option_1():
+
+def test_example_workflow_option_3():
     DEM = load_dem()
     watershed_mask = load_watershed_mask()
     river_mask = load_river_mask()
 
     nx, ny = DEM.shape
 
-    init = init_queue(DEM)
+    init = init_queue(DEM, domainmask=watershed_mask, initmask=river_mask)
     for key in ['mask', 'marked', 'basins']:
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"init_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = init[key]
         assert np.array_equal(python_data, R_data), f"init_{key}.txt is not equal to the correct output"
     R_file = os.path.join(CORRECT_OUTPUT_DIR, "init_queue.txt")
     R_data = np.loadtxt(R_file)
     for row in R_data:
+        swap = row[0]
+        row[0] = row[1]
+        row[1] = swap
         row[0] -= 1
         row[1] -= 1
     python_data = init['queue']
     assert np.array_equal(python_data, R_data), "init_queue.txt is not equal to the correct output"
     with open(os.path.join(CORRECT_OUTPUT_DIR, "init_direction.txt")) as f:
         content = f.read().replace("NA", "nan")
-    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = init["direction"]
     assert np.array_equal(python_data, R_data, equal_nan=True), "init_direction.txt is not equal to the correct output"
 
@@ -53,6 +53,7 @@ def test_example_workflow_option_1():
         DEM,
         init["queue"].copy(),
         init["marked"].copy(),
+        mask=watershed_mask,
         basins=init["basins"].copy(),
         epsilon=0,
         n_chunk=10,
@@ -62,13 +63,13 @@ def test_example_workflow_option_1():
         if key == "direction":
             continue
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"travHS_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = trav_hs[key]
         assert np.array_equal(python_data, R_data)
 
     with open(os.path.join(CORRECT_OUTPUT_DIR, "travHS_direction.txt")) as f:
         content = f.read().replace("NA", "nan")
-    r_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    r_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = trav_hs["direction"]
     assert np.array_equal(python_data, r_data, equal_nan=True)
 
@@ -78,12 +79,13 @@ def test_example_workflow_option_1():
         printflag=False,
     )
     R_file = os.path.join(CORRECT_OUTPUT_DIR, "drainage_area.txt")
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     assert np.array_equal(area, R_data)
 
     subbasin = calc_subbasins(
         trav_hs["direction"].copy(),
         area=area.copy(),
+        mask=watershed_mask.copy(),
         riv_th=60,
         merge_th=0,
     )
@@ -91,11 +93,17 @@ def test_example_workflow_option_1():
         if key == "summary":
             continue
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"subbasin_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = subbasin[key]
         assert np.array_equal(python_data, R_data)
     r_data = np.loadtxt(os.path.join(CORRECT_OUTPUT_DIR, "subbasin_summary.txt"))
     for row in r_data:
+        swap = row[1]
+        row[1] = row[2]
+        row[2] = swap
+        swap = row[3]
+        row[3] = row[4]
+        row[4] = swap
         for j in range(1, 5):
             row[j] -= 1
     python_data = subbasin["summary"]
@@ -106,11 +114,15 @@ def test_example_workflow_option_1():
         subbasin["summary"][:, 5],
         subbasin["segments"].copy(),
     )
-    for key in stream_order.keys():
-        R_file = os.path.join(CORRECT_OUTPUT_DIR, f"streamorder_{key}.txt")
-        R_data = np.loadtxt(R_file)
-        python_data = stream_order[key]
-        assert np.array_equal(python_data, R_data)
+    R_file = os.path.join(CORRECT_OUTPUT_DIR, f"streamorder_summary.txt")
+    R_data = np.loadtxt(R_file)
+    python_data = stream_order['summary']
+    assert np.array_equal(python_data, R_data)
+
+    R_file = os.path.join(CORRECT_OUTPUT_DIR, f"streamorder_order_mask.txt")
+    R_data = np.loadtxt(R_file).T
+    python_data = stream_order['order_mask']
+    assert np.array_equal(python_data, R_data)
 
     riv_smooth_result = river_smooth(
         dem=trav_hs["dem"].copy(),
@@ -122,13 +134,13 @@ def test_example_workflow_option_1():
     )
     key = "dem.adj"
     R_file = os.path.join(CORRECT_OUTPUT_DIR, f"RivSmooth_{key}.txt")
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     python_data = riv_smooth_result[key]
     assert np.allclose(python_data, R_data)
 
     key = "processed"
     R_file = os.path.join(CORRECT_OUTPUT_DIR, f"RivSmooth_{key}.txt")
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     python_data = riv_smooth_result[key]
     assert np.array_equal(python_data, R_data)
 
@@ -136,6 +148,12 @@ def test_example_workflow_option_1():
     R_file = os.path.join(CORRECT_OUTPUT_DIR, f"RivSmooth_{key}.txt")
     R_data = np.loadtxt(R_file)
     for row in R_data:
+        swap = row[1]
+        row[1] = row[2]
+        row[2] = swap
+        swap = row[3]
+        row[3] = row[4]
+        row[4] = swap
         for j in range(1, 5):
             row[j] -= 1
     python_data = riv_smooth_result[key]
@@ -155,12 +173,15 @@ def test_example_workflow_option_1():
         if key == "path_list":
             continue
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"streamline_old_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = streamline_old[key]
         assert np.allclose(python_data, R_data)
     R_file = os.path.join(CORRECT_OUTPUT_DIR, "streamline_old_path_list.txt")
     R_data = np.loadtxt(R_file)
     for row in R_data:
+        swap = row[0]
+        row[0] = row[1]
+        row[1] = swap
         row[0] -= 1
         row[1] -= 1
     python_data = streamline_old["path_list"]
@@ -176,12 +197,15 @@ def test_example_workflow_option_1():
         if key == "path_list":
             continue
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"streamline_new_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = streamline_new[key]
         assert np.allclose(python_data, R_data)
     R_file = os.path.join(CORRECT_OUTPUT_DIR, "streamline_new_path_list.txt")
     R_data = np.loadtxt(R_file)
     for row in R_data:
+        swap = row[0]
+        row[0] = row[1]
+        row[1] = swap
         row[0] -= 1
         row[1] -= 1
     python_data = streamline_new["path_list"]
@@ -197,12 +221,15 @@ def test_example_workflow_option_1():
         if key == "path_list":
             continue
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"streamline_riv_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = streamline_riv[key]
         assert np.allclose(python_data, R_data)
     R_file = os.path.join(CORRECT_OUTPUT_DIR, "streamline_riv_path_list.txt")
     R_data = np.loadtxt(R_file)
     for row in R_data:
+        swap = row[0]
+        row[0] = row[1]
+        row[1] = swap
         row[0] -= 1
         row[1] -= 1
     python_data = streamline_riv["path_list"]
@@ -222,12 +249,12 @@ def test_example_workflow_option_1():
         if key == "direction":
             continue
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"slopesCalc_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = slopes_calc[key]
         assert np.allclose(python_data, R_data)
     with open(os.path.join(CORRECT_OUTPUT_DIR, "slopesCalc_direction.txt")) as f:
         content = f.read().replace("NA", "nan")
-    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = slopes_calc["direction"]
     assert np.array_equal(python_data, R_data, equal_nan=True)
 
@@ -241,7 +268,7 @@ def test_example_workflow_option_1():
     )
     for key in slopes_calc2.keys():
         R_file = os.path.join(CORRECT_OUTPUT_DIR, f"slopesCalc2_{key}.txt")
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = slopes_calc2[key]
         if key == "slopex" or key == "slopey":
             assert np.allclose(python_data, R_data)

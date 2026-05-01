@@ -50,20 +50,23 @@ def test_downwinding_1():
         if key == 'direction' or key == 'queue':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_init_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = init[key]
         assert np.array_equal(python_data, R_data)
 
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_init_queue.txt'
     r_queue = np.loadtxt(R_file)
     for row in r_queue:
+        swap = row[0]
+        row[0] = row[1]
+        row[1] = swap
         row[0] -= 1
         row[1] -= 1
     assert np.array_equal(r_queue, init['queue'])
     
     with open(os.path.join(CORRECT_OUTPUT_DIR, "downwinding_1_init_direction.txt")) as f:
         content = f.read().replace("NA", "nan")
-    R_data = np.loadtxt(content.splitlines(), delimiter=" ")
+    R_data = np.loadtxt(content.splitlines(), delimiter=" ").T
     python_data = init["direction"]
     assert np.array_equal(python_data, R_data, equal_nan=True)
 
@@ -78,12 +81,12 @@ def test_downwinding_1():
         if key == 'dem':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_travHS_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = trav_hs[key]
         assert np.array_equal(python_data, R_data)
     
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_travHS_dem.txt'
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     python_data = trav_hs['dem']
     assert np.allclose(python_data, R_data)
 
@@ -100,7 +103,7 @@ def test_downwinding_1():
 
     for key in slopes_uw.keys():
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_slopesUW_option1_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         if key == 'direction':
             assert np.array_equal(python_data, R_data, equal_nan=True)
@@ -110,7 +113,7 @@ def test_downwinding_1():
     # Option 2
     area = drainage_area(trav_hs["direction"], printflag=False)
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_area_from_travHS_direction.txt'
-    R_data = np.loadtxt(R_file)
+    R_data = np.loadtxt(R_file).T
     python_data = area
     assert np.array_equal(python_data, R_data)
 
@@ -125,12 +128,18 @@ def test_downwinding_1():
         if key == 'summary':
             continue
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_subbasin_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = subbasin[key]
         assert np.array_equal(python_data, R_data)
     R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_subbasin_summary.txt'
     R_data = np.loadtxt(R_file)
     for row in R_data:
+        swap = row[1]
+        row[1] = row[2]
+        row[2] = swap
+        swap = row[3]
+        row[3] = row[4]
+        row[4] = swap
         for j in range(1, 5):
             row[j] -= 1
     python_data = subbasin['summary']
@@ -150,7 +159,7 @@ def test_downwinding_1():
     )
     for key in slopes_uw.keys():
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_slopesUW_option2_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         if key == 'direction':
             assert np.array_equal(python_data, R_data, equal_nan=True)
@@ -177,7 +186,7 @@ def test_downwinding_1():
 
     for key in slopes_uw.keys():
         R_file = f'{CORRECT_OUTPUT_DIR}/downwinding_1_slopesUW_option2b_{key}.txt'
-        R_data = np.loadtxt(R_file)
+        R_data = np.loadtxt(R_file).T
         python_data = slopes_uw[key]
         if key == 'direction':
             assert np.array_equal(python_data, R_data, equal_nan=True)

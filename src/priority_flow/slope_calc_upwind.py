@@ -39,7 +39,7 @@ def slope_calc_upwind(
     Parameters
     ----------
     dem : np.ndarray
-        Digital elevation model (nx x ny).
+        Digital elevation model (nx x ny) in HydroFrame layout.
     direction : np.ndarray
         Flow direction (1=down, 2=left, 3=up, 4=right). May be modified in place for borders.
     dx, dy : float
@@ -114,6 +114,20 @@ def slope_calc_upwind(
     direction = np.asarray(direction, dtype=float).copy()
     secondaryTH = secondary_th
     river_secondaryTH = river_secondary_th
+
+    # HydroFrame layout -> internal R-style layout
+    dem = dem.T.copy()
+    direction = direction.T.copy()
+    if mask is not None:
+        mask = np.asarray(mask).T.copy()
+    if borders is not None:
+        borders = np.asarray(borders).T.copy()
+    if rivermask is not None:
+        rivermask = np.asarray(rivermask).T.copy()
+    if subbasins is not None:
+        subbasins = np.asarray(subbasins).T.copy()
+
+    dx, dy = dy, dx
 
     # R: ny=ncol(dem)  nx=nrow(dem)
     ny = dem.shape[1]
@@ -607,8 +621,9 @@ def slope_calc_upwind(
     slopex2[np.isnan(slopex2)] = 0
     slopey2[np.isnan(slopey2)] = 0
 
+    # Internal layout -> HydroFrame layout
     return {
-        "slopex": slopex2,
-        "slopey": slopey2,
-        "direction": direction,
+        "slopex": slopex2.T,
+        "slopey": slopey2.T,
+        "direction": direction.T,
     }

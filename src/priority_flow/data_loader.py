@@ -33,7 +33,7 @@ def load_dem():
     >>> print(f"DEM shape: {dem.shape}")
     >>> print(f"Elevation range: {dem.min():.2f} to {dem.max():.2f}")
     """
-    data_path = _DATA_DIR / "DEM.npy"
+    data_path = _DATA_DIR / "DEM_t.npy"
     if not data_path.exists():
         raise FileNotFoundError(f"DEM data file not found at {data_path}")
     
@@ -58,7 +58,7 @@ def load_watershed_mask():
     >>> print(f"Watershed mask shape: {mask.shape}")
     >>> print(f"Watershed cells: {np.sum(mask)}")
     """
-    data_path = _DATA_DIR / "watershed_mask.npy"
+    data_path = _DATA_DIR / "watershed_mask_t.npy"
     if not data_path.exists():
         raise FileNotFoundError(f"Watershed mask data file not found at {data_path}")
     
@@ -83,7 +83,7 @@ def load_river_mask():
     >>> print(f"River mask shape: {river_mask.shape}")
     >>> print(f"River cells: {np.sum(river_mask)}")
     """
-    data_path = _DATA_DIR / "river_mask.npy"
+    data_path = _DATA_DIR / "river_mask_t.npy"
     if not data_path.exists():
         raise FileNotFoundError(f"River mask data file not found at {data_path}")
     

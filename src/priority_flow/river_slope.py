@@ -68,6 +68,14 @@ def riv_slope(
         - ``\"SlopeOutletNew\"``: primary outlet slope at each river
           cell after adjustment.
     """
+        
+    # HydroFrame layout -> internal R-style layout
+    direction = direction.T.copy()
+    slopex = slopex.T.copy()
+    slopey = slopey.T.copy()
+    if river_mask is not None:
+        river_mask = river_mask.T.copy()
+
     # R: nx=dim(direction)[1]  ny=dim(direction)[2]
     nx = direction.shape[0]
     ny = direction.shape[1]
@@ -148,12 +156,13 @@ def riv_slope(
                                 slopexNew[i + int(kd[3, 0]), j + int(kd[3, 1])] = 0
                                 adj_mask[i, j] = adj_mask[i, j] + 1
 
+    # Internal layout -> HydroFrame layout
     # R: output_list=list("slopex"=slopexNew, "slopey"=slopeyNew, "adj_mask"=adj_mask, "SlopeOutlet"=outdirslope, "SlopeOutletNew"=outdirslopeNew)
     output_list = {
-        "slopex": slopexNew,
-        "slopey": slopeyNew,
-        "adj_mask": adj_mask,
-        "SlopeOutlet": outdirslope,
-        "SlopeOutletNew": outdirslopeNew,
+        "slopex": slopexNew.T,
+        "slopey": slopeyNew.T,
+        "adj_mask": adj_mask.T,
+        "SlopeOutlet": outdirslope.T,
+        "SlopeOutletNew": outdirslopeNew.T,
     }
     return output_list

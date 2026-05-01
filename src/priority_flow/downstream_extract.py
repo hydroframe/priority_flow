@@ -64,6 +64,23 @@ def path_extract(
         - ``\"path_list\"``: 2D array of ``(row, col)`` indices for the cells
           visited along the path, in traversal order.
     """
+    startpoint = np.asarray(startpoint)
+    if startpoint.ndim >= 2:
+        row_hf = int(startpoint.flat[0])
+        col_hf = int(startpoint.flat[1])
+    else:
+        row_hf = int(startpoint[0])
+        col_hf = int(startpoint[1])
+    # HF (row, col) -> internal first index = col, second = row (after input.T)
+    indx = col_hf
+    indy = row_hf
+
+    # HydroFrame layout -> internal R-style layout
+    input = input.T.copy()
+    direction = direction.T.copy()
+    if mask is not None:
+        mask = mask.T.copy()
+
     # R: nx=dim(direction)[1]  ny=dim(direction)[2]
     nx = direction.shape[0]
     ny = direction.shape[1]
@@ -96,15 +113,7 @@ def path_extract(
     if d4[3] != 4:
         dir2[direction == d4[3]] = 4
 
-    # initializing things
-    # R: indx=startpoint[1]  indy=startpoint[2]  (R 1-based row, col)
-    startpoint = np.asarray(startpoint)
-    if startpoint.ndim >= 2:
-        indx = int(startpoint.flat[0])
-        indy = int(startpoint.flat[1])
-    else:
-        indx = int(startpoint[0])
-        indy = int(startpoint[1])
+    # initializing things (indx, indy already set from HydroFrame startpoint)
     # R: step=1
     step = 1
     # R: active=T
@@ -145,11 +154,21 @@ def path_extract(
         indy = downindy
         step = step + 1
 
-    # R: output_list=list("data"=output, "path.mask"=path.mask, "path.list"=path)
+    # Internal (row, col) -> HydroFrame (row, col): swap columns
     path_list = np.array(path, dtype=np.int64) if path else np.zeros((0, 2), dtype=np.int64)
+    if path_list.size > 0:
+        path_list_out = path_list.copy()
+        t = path_list_out[:, 0].copy()
+        path_list_out[:, 0] = path_list_out[:, 1]
+        path_list_out[:, 1] = t
+    else:
+        path_list_out = path_list
+
+    # Internal layout -> HydroFrame layout
+    # R: output_list=list("data"=output, "path.mask"=path.mask, "path.list"=path)
     output_list = {
         "data": np.array(output, dtype=input.dtype),
-        "path_mask": path_mask,
-        "path_list": path_list,
+        "path_mask": path_mask.T,
+        "path_list": path_list_out,
     }
     return output_list

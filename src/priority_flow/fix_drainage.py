@@ -41,7 +41,7 @@ def fix_drainage(
     Parameters
     ----------
     dem : np.ndarray
-        2D array of elevations for the domain \((nx, ny)\).
+        2D array of elevations for the domain (nx, ny).
     direction : np.ndarray
         2D array of D4 flow directions for each cell. Direction codes
         follow the ``d4`` numbering scheme.

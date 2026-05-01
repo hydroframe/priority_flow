@@ -74,6 +74,12 @@ def calc_subbasins(
           (segment ID, representative coordinates, downstream segment ID and
           cell count). Coordinates are stored using 0-based indexing.
     """
+    # HydroFrame layout -> internal R-style layout
+    direction = direction.T.copy()
+    area = area.T.copy()
+    if mask is not None:
+        mask = mask.T.copy()
+
     # R: nx=nrow(direction)
     # R: ny=ncol(direction)
     nx = direction.shape[0]
@@ -411,11 +417,24 @@ def calc_subbasins(
         subbasinA = np.zeros((nx, ny))
         summary = np.zeros((0, 7))
 
+    # Internal (row, col) pairs in summary columns 1–2 and 3–4 -> HydroFrame
+    if not end and summary.size > 0:
+        summary_out = summary.copy()
+        t = summary_out[:, 1].copy()
+        summary_out[:, 1] = summary_out[:, 2]
+        summary_out[:, 2] = t
+        t = summary_out[:, 3].copy()
+        summary_out[:, 3] = summary_out[:, 4]
+        summary_out[:, 4] = t
+    else:
+        summary_out = summary
+
+    # Internal layout -> HydroFrame layout
     output_list = {
-        "segments": subbasin,
-        "subbasins": subbasinA,
-        "RiverMask": rivers,
-        "summary": summary,
+        "segments": subbasin.T,
+        "subbasins": subbasinA.T,
+        "RiverMask": rivers.T,
+        "summary": summary_out,
     }
     # R: return(output_list)
     return output_list

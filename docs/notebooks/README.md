@@ -1,1 +1,1 @@
-Some words about the example notebooks here.
+The following notebooks provide example workflows using the `priority_flow` API.
