@@ -1,6 +1,6 @@
 # priority_flow
 
-*priority_flow* is a toolkit for topographic processing for hydrologic models. This repo contains an python package and a set of workflow examples (see instructions below). This is the Python version of the R PriorityFlow package.
+*priority_flow* is a toolkit for topographic processing for hydrologic models. This repo contains an python package and a set of workflow examples (see instructions below). This is the Python version of the R PriorityFlow package. [Link](https://priority-flow.readthedocs.io/en/latest/) to the ReadTheDocs documentation.
 
 ## Development Team
 + Laura Condon (lecondon@email.arizona.edu)
